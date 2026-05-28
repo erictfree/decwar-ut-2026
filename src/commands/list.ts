@@ -51,6 +51,8 @@ interface Filter {
   kwList: boolean;
   /** Has the SUMMARY keyword been typed this invocation? (source `imask & SUMBIT`) */
   kwSummary: boolean;
+  /** Has the ALL keyword been typed? (source `imask & ALLBIT`) */
+  kwAll: boolean;
 }
 
 function defaults(kind: ListKind, team: 1 | 2): Filter {
@@ -58,7 +60,7 @@ function defaults(kind: ListKind, team: 1 | 2): Filter {
     ships: false, bases: false, planets: false,
     fed: false, emp: false, neu: false, rom: false, capturedOnly: false,
     range: INF, userRange: false, list: true, summary: false,
-    kwList: false, kwSummary: false,
+    kwList: false, kwSummary: false, kwAll: false,
   };
   switch (kind) {
     case "LIST":
@@ -86,6 +88,10 @@ function applyKeyword(f: Filter, k: string, team: 1 | 2, kind: ListKind): boolea
   if (equal(k, "ENEMY") !== 0 || equal(k, "TARGETS") !== 0) { f.fed = team === TEAM.EMP; f.emp = team === TEAM.FED; f.neu = false; f.rom = true; return true; }
   if (equal(k, "CAPTURED") !== 0) { f.capturedOnly = true; f.planets = true; f.ships = false; f.bases = false; f.neu = false; return true; }
   if (equal(k, "ALL") !== 0) {
+    // Source DECWAR.FOR:1698: `if ((imask .and. (ALLBIT .or. CRDBIT)) .ne. 0) goto 1500`
+    // → ALL twice is a syntax error.
+    if (f.kwAll) return false;
+    f.kwAll = true;
     // Source DECWAR.FOR:1700: `if (((imask .and. SIDMSK) .eq. 0) .and. (cmd .ne. TARCMD))
     // smask = FEDBIT .or. EMPBIT .or. NEUBIT .or. ROMBIT`. ALL extends the side filter
     // to "everything" — EXCEPT for TARGETS, where ALL only extends the range to ∞ but
@@ -95,25 +101,23 @@ function applyKeyword(f: Filter, k: string, team: 1 | 2, kind: ListKind): boolea
     return true;
   }
   if (equal(k, "LIST") !== 0) {
-    // Source DECWAR.FOR:3100–3128 (LIST keyword handler). Always enables list output;
-    // additionally clears summary IFF the entry command is NOT SUMMARY and SUMMARY
-    // hadn't already been typed.  Effect:
-    //   LIST LIST              → list only (default already)
-    //   SUMMARY LIST           → both (cmd=SUMCMD branch — preserve summary)
-    //   BASES LIST             → list only (BASES defaults to both; LIST narrows it)
-    //   BASES SUMMARY LIST     → both (SUMMARY keyword already enabled summary)
+    // Source DECWAR.FOR:1723: `if ((imask .and. (OUTMSK | ...)) .ne. 0) goto 1500`.
+    // OUTMSK = LSTBIT | SUMBIT — LIST after EITHER LIST or SUMMARY = syntax error.
+    if (f.kwList || f.kwSummary) return false;
     f.list = true;
-    if (kind !== "SUMMARY" && !f.kwSummary) f.summary = false;
+    // Lines 1727–1728: clear summary unless entry command is SUMMARY.
+    if (kind !== "SUMMARY") f.summary = false;
     f.kwList = true;
     return true;
   }
   if (equal(k, "SUMMARY") !== 0) {
-    // Source DECWAR.FOR:3200–3228 (SUMMARY keyword handler). Mirrors LIST: enables
-    // summary output; clears list IFF entry command is NOT LIST and LIST hadn't been
-    // typed.  Also extends range to MAXINT if no numeric range was given (source 1734).
+    // Source DECWAR.FOR:1731: same OUTMSK gate as LIST.
+    if (f.kwList || f.kwSummary) return false;
     f.summary = true;
+    // Source line 1734: SUMMARY without a numeric range extends range to MAXINT.
     if (!f.userRange) f.range = INF;
-    if (kind !== "LIST" && !f.kwList) f.list = false;
+    // Lines 1736–1737: clear list unless entry command is LIST.
+    if (kind !== "LIST") f.list = false;
     f.kwSummary = true;
     return true;
   }
@@ -135,7 +139,19 @@ export function list(state: GameState, session: Session, kind: ListKind): void {
   // ── parse keyword modifiers ────────────────────────────────────────────────────────────────
   for (let i = 2; i <= t.ntok; i++) {
     if (t.type[i] === TOK.KINT) {
-      f.range = t.val[i] ?? f.range;
+      // Source DECWAR.FOR:1706: `if ((imask .and. (RNGBIT .or. CRDBIT)) .ne. 0) goto 1500`
+      // → a second numeric range token is a syntax error.
+      if (f.userRange) {
+        session.io.write(`${CRLF}${LSTS02}${t.val[i] ?? ""}${CRLF}`);
+        return;
+      }
+      const val = t.val[i] ?? 0;
+      // Source line 2709: `if (range .lt. 1) goto 1500` — nonsense ranges rejected.
+      if (val < 1) {
+        session.io.write(`${CRLF}${LSTS02}${val}${CRLF}`);
+        return;
+      }
+      f.range = val;
       f.userRange = true;
       continue;
     }

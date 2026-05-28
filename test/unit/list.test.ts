@@ -255,13 +255,35 @@ test("BASES + SUMMARY keyword → summary only (clears the default list)", () =>
   assert.match(o, /\d+ \w+ bases?/);
 });
 
-test("BASES + LIST + SUMMARY (both keywords typed) → both outputs preserved", () => {
+test("BASES + LIST + SUMMARY → syntax error (source OUTMSK gate, DECWAR.FOR:1731)", () => {
+  // Source: SUMMARY keyword checks `imask & OUTMSK` first.  After LIST, OUTMSK includes
+  // LSTBIT → SUMMARY rejects with LSTS02 "Illegal keyword".  The output mode can only be
+  // narrowed by ONE explicit keyword per command.
   const { state, a } = fresh();
   setArgs(a, "BASES LIST SUMMARY");
   list(state, a, "BASES");
-  const o = out(a);
-  assert.match(o, /Federation base\s+\d+-\d+/); // per-base line
-  assert.match(o, /\d+ \w+ bases?/);            // summary count
+  assert.match(out(a), /Illegal keyword SUMMA/);
+});
+
+test("ALL twice → syntax error (DECWAR.FOR:1698)", () => {
+  const { state, a } = fresh();
+  setArgs(a, "LIST ALL ALL");
+  list(state, a, "LIST");
+  assert.match(out(a), /Illegal keyword ALL/);
+});
+
+test("Numeric range twice → syntax error (DECWAR.FOR:1706)", () => {
+  const { state, a } = fresh();
+  setArgs(a, "LIST 5 10");
+  list(state, a, "LIST");
+  assert.match(out(a), /Illegal keyword 10/);
+});
+
+test("LIST LIST → syntax error (source OUTMSK gate, DECWAR.FOR:1723)", () => {
+  const { state, a } = fresh();
+  setArgs(a, "LIST LIST LIST");
+  list(state, a, "LIST");
+  assert.match(out(a), /Illegal keyword LIST/);
 });
 
 test("LIST command + SUMMARY keyword → both (cmd==LSTCMD branch preserves list)", () => {
