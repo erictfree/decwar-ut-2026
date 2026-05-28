@@ -157,6 +157,47 @@ test("plnatk: neutral planets fire on the Romulan but do NOT award team score", 
   assert.equal(state.tmscor[TEAM.EMP]?.[6] ?? 0, initialEmpScore);
 });
 
+test("life support: LIFDAM warning emitted when KDLIFE is critical (prtype=0, source line 245)", () => {
+  const { state, session } = setup(20);
+  state.devices[1]![DEV.KDLIFE] = KCRIT + 400; // > KCRIT after 300 auto-repair
+  state.docked[1] = 0;
+  state.ships[1]!.lifeSupport = 5;
+  session.prtype = 0; // normal prompt — LIFDAM fires
+  const io = session.io as ScriptedIo;
+  io.output = "";
+  postMove(state, session);
+  assert.match(io.output, /WARNING!!  Life Support damaged\./);
+  assert.match(io.output, /Reserves of \d+ stardates\./);
+});
+
+test("life support: LIFDAM warning suppressed under INFORMATIVE prompt (prtype != 0)", () => {
+  const { state, session } = setup(21);
+  state.devices[1]![DEV.KDLIFE] = KCRIT + 400; // > KCRIT after 300 auto-repair
+  state.docked[1] = 0;
+  state.ships[1]!.lifeSupport = 5;
+  session.prtype = -1; // informative — L flag in prompt instead, no LIFDAM line
+  const io = session.io as ScriptedIo;
+  io.output = "";
+  postMove(state, session);
+  assert.doesNotMatch(io.output, /WARNING!!  Life Support damaged/);
+});
+
+test("life support: docked ship with critical KDLIFE still gets LIFDAM warning (no decay)", () => {
+  // Source line 242: decrement only when NOT docked; line 244-247: warning fires
+  // regardless of docked status (the device is still broken — docking refit fills
+  // reserves but doesn't repair the device itself).
+  const { state, session } = setup(22);
+  state.devices[1]![DEV.KDLIFE] = KCRIT + 400; // > KCRIT after 300 auto-repair
+  state.docked[1] = -1; // docked
+  state.ships[1]!.lifeSupport = 3;
+  session.prtype = 0;
+  const io = session.io as ScriptedIo;
+  io.output = "";
+  postMove(state, session);
+  assert.match(io.output, /WARNING!!  Life Support damaged/);
+  assert.equal(state.ships[1]!.lifeSupport, 3); // reserves DID NOT decay (docked)
+});
+
 test("life support: a critically-damaged, undocked ship loses a stardate and dies at empty", () => {
   const { state, session } = setup(7);
   // Must stay ≥ KCRIT AFTER the end-of-turn repair (which heals 300 off every device first).

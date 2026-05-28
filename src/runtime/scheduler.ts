@@ -35,6 +35,8 @@ import type { Firer } from "../combat/damage.ts";
 import { romdrv, pharom } from "../combat/romulan.ts";
 import { pridis } from "../comms/messageBus.ts";
 import type { HitEvent } from "../comms/messageBus.ts";
+import { CRLF } from "../render/output.ts";
+import { LIFDAM, STRDAT } from "../render/strings.ts";
 import type { GameState } from "../core/state.ts";
 import type { Session } from "../core/session.ts";
 
@@ -86,10 +88,20 @@ export function postMove(state: GameState, session: Session, doRepair = true): v
   ship.turns++;
   state.tmturn[session.team] = (state.tmturn[session.team] ?? 0) + 1;
 
-  // Life-support decay: only while the LS device is critically damaged and undocked.
-  if ((dev[DEV.KDLIFE] ?? 0) >= KCRIT && (state.docked[who] ?? 0) >= 0) {
-    ship.lifeSupport--;
-    if (ship.lifeSupport < 0) ship.damage = KENDAM; // life support gone → fatal
+  // Life-support tick (source DECWAR.FOR:241–247).  The warning fires whenever the LS
+  // device is critically damaged — even when docked — because docking doesn't repair
+  // the device itself, only restores the reserves (DOCK refit sets KLFSUP=5).  Reserves
+  // only decay when undocked; at < 0 the ship dies.  The LIFDAM warning is suppressed
+  // under the INFORMATIVE prompt (prtype !== 0) because the prompt already shows the
+  // "<N>L" indicator there.
+  if ((dev[DEV.KDLIFE] ?? 0) >= KCRIT) {
+    if ((state.docked[who] ?? 0) >= 0) {
+      ship.lifeSupport--;
+      if (ship.lifeSupport < 0) ship.damage = KENDAM; // life support gone → fatal
+    }
+    if (session.prtype === 0) {
+      session.io.write(`${LIFDAM}${ship.lifeSupport}${STRDAT}${CRLF}`);
+    }
   }
 
   // Score flush: pending tpoint → player score + team score, then zero.
