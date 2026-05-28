@@ -126,6 +126,10 @@ export async function torpedos(state: GameState, session: Session): Promise<bool
   const firer: Firer = { ship: true, player: session.player, who, team: session.team, tpoint: session.tpoint };
   let misfired = false;
   let fired = false;
+  // Source DECWAR.FOR:4295 `tpaus = 0` then per-torp `tpaus = tpaus + (slwest+1)*1000 +
+  // shpdam(who,KDTORP)` at line 4315.  Accumulate inside the loop so misfire-aborted
+  // bursts only pay for the torps that actually fired.
+  let tpaus = 0;
 
   for (let id = 1; id <= burst.ntorp; id++) {
     if (misfired) break; // a prior misfire aborts the rest of the burst (iflg < 0)
@@ -150,6 +154,11 @@ export async function torpedos(state: GameState, session: Session): Promise<bool
       }
     }
 
+    // Source line 4315: tpaus += (slwest+1)*1000 + KDTORP damage value (ms penalty for
+    // damaged tubes, parallel to phasers' KDPHAS term).  Accumulated per actually-fired
+    // torpedo — a misfire-aborted burst only pays for what fired.
+    tpaus += (state.slwest + 1) * 1000 + (dev[DEV.KDTORP] ?? 0);
+
     const idis = KRANGE - 2 + Math.trunc((state.rng.ran() - 0.5) * 4.0 + 0.5); // DRAW
     const r = check(state.board, state.rng, ship.vPos, ship.hPos, iV, iH, idis, d);
     fired = true;
@@ -159,10 +168,9 @@ export async function torpedos(state: GameState, session: Session): Promise<bool
     resolveTorpedo(state, session, firer, id, vc, hc, r.dcode);
   }
 
-  // Stamp the torpedo bank cooldown (source TORP 4415: `tobank = etim + tpaus`). One-second
-  // base per fired torp, scaled by slwest — consistent with source's per-torp accumulator.
+  // Stamp the torpedo bank cooldown (source TORP 4415: `tobank = etim + tpaus`).
   if (fired) {
-    session.tobank = state.clock.monotonic() + burst.ntorp * (state.slwest + 1) * 1000;
+    session.tobank = state.clock.monotonic() + tpaus;
   }
   return fired;
 }

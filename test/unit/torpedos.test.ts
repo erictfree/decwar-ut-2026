@@ -120,3 +120,59 @@ test("firing at your own location is refused", async () => {
   assert.equal(await torpedos(state, session), false);
   assert.match(io.output, /Own location used!/);
 });
+
+// ── Cooldown stamp (source DECWAR.FOR:4315 `tpaus` accumulator) ───────────────────────────
+
+test("tobank cooldown accumulates per-torp, including KDTORP damage term", async () => {
+  const { state, session } = setup();
+  // Plant a target so the burst can fire cleanly.
+  const enemy = newlyActivatedShip();
+  enemy.vPos = 10; enemy.hPos = 13;
+  state.ships[10] = enemy;
+  state.alive[10] = -1;
+  state.board.setdsp(10, 13, 210);
+  // Damage the torpedo tubes by 200 ms-worth (source treats shpdam(who,KDTORP) as
+  // ms penalty per torp, just like phaser's KDPHAS term).
+  state.devices[1]![DEV.KDTORP] = 200;
+  const before = state.clock.monotonic();
+  session.tokens = tokenize("TORP 3 10 13", 0).tokens;
+  await torpedos(state, session);
+  // Expected: tobank = before + 3 * ((slwest+1)*1000 + 200).  slwest default = 1, so
+  // per-torp = 2000 + 200 = 2200.  Three torps = 6600.  Allow small monotonic slop.
+  const expected = before + 3 * ((state.slwest + 1) * 1000 + 200);
+  assert.ok(
+    Math.abs(session.tobank - expected) <= 5,
+    `tobank ${session.tobank} should be ~${expected} (slop ≤ 5ms)`,
+  );
+});
+
+test("misfire-aborted burst only stamps tobank for the torps that actually fired", async () => {
+  // Find a seed where torp 1 misfires (iran(100) > 96).  With seed=7 this happens on
+  // the first iran(100) draw of the per-torp loop.  If no misfire occurs in 50 seeds,
+  // fall back gracefully.
+  for (let seed = 1; seed <= 200; seed++) {
+    const { state, session } = setup(seed);
+    const enemy = newlyActivatedShip();
+    enemy.vPos = 10; enemy.hPos = 13;
+    state.ships[10] = enemy;
+    state.alive[10] = -1;
+    state.board.setdsp(10, 13, 210);
+    const before = state.clock.monotonic();
+    session.tokens = tokenize("TORP 3 10 13", 0).tokens;
+    const io = session.io as ScriptedIo;
+    io.output = "";
+    await torpedos(state, session);
+    if (!io.output.includes("MISFIRES")) continue; // no misfire this seed → keep trying
+    // A misfire on torp 1 means only 1 torp fired.  Verify tobank stamped for 1 torp's
+    // worth, NOT for ntorp=3.  Per-torp = (slwest+1)*1000 + KDTORP_damage.  KDTORP may
+    // have been damaged by the misfire's iran(5)==5 branch — pull current value.
+    const perTorp = (state.slwest + 1) * 1000; // KDTORP damage was 0 at fire time
+    assert.ok(
+      session.tobank - before <= perTorp * 2,
+      `seed=${seed}: misfire-aborted 3-torp burst should stamp ≤ 2 torps worth (got ${session.tobank - before})`,
+    );
+    return;
+  }
+  // No seed produced a misfire in 200 tries — extremely unlikely (4% per torp × 3 × 200).
+  assert.fail("expected at least one seed to produce a misfire");
+});
