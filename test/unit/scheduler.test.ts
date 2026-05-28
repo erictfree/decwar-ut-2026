@@ -102,6 +102,61 @@ test("plnatk: an enemy planet in range fires at the player ship", () => {
   assert.ok(state.bus.hasHits(1));
 });
 
+test("plnatk: each planet ALSO fires at the Romulan when in range (source DECWAR.FOR:2826)", () => {
+  const { state, session } = lonePlayer(11);
+  state.nplnet = 1;
+  state.planets[1]!.vPos = 30;
+  state.planets[1]!.hPos = 30;
+  state.planets[1]!.buildCount = 1;
+  state.board.setdsp(30, 30, DX.EPLN * 100 + 1); // Empire planet (enemy to Fed player)
+  // Plant the Romulan one sector from the planet (in range 2).
+  state.romulan.exists = true;
+  state.romulan.vPos = 31;
+  state.romulan.hPos = 31;
+  state.romulan.energy = 500;
+  const initialRomEnergy = state.romulan.energy;
+
+  postMove(state, session, false);
+  // The planet's Romulan-fire branch damaged the Romulan.
+  assert.ok(
+    state.romulan.energy < initialRomEnergy,
+    `Romulan energy should drop; was ${initialRomEnergy}, now ${state.romulan.energy}`,
+  );
+  // Scoring: damage routes to tmscor[planet.pteam][KPRKIL] (captured planet, not neutral).
+  const PT_KPRKIL = 6; // KPRKIL index in PT enum
+  assert.ok(
+    (state.tmscor[TEAM.EMP]![PT_KPRKIL] ?? 0) > 0,
+    "Empire tmscor[KPRKIL] should record the planet's damage to the Romulan",
+  );
+});
+
+test("plnatk: neutral planets fire on the Romulan but do NOT award team score", () => {
+  const { state, session } = lonePlayer(13);
+  state.nplnet = 1;
+  state.planets[1]!.vPos = 30;
+  state.planets[1]!.hPos = 30;
+  state.planets[1]!.buildCount = 0;
+  state.board.setdsp(30, 30, DX.NPLN * 100 + 1); // neutral planet
+  state.romulan.exists = true;
+  state.romulan.vPos = 31;
+  state.romulan.hPos = 31;
+  state.romulan.energy = 500;
+  const initialRomEnergy = state.romulan.energy;
+  const initialFedScore = state.tmscor[TEAM.FED]?.[6] ?? 0;
+  const initialEmpScore = state.tmscor[TEAM.EMP]?.[6] ?? 0;
+
+  // Run many ticks to amortize the iran(2) 50%-skip gate.
+  for (let i = 0; i < 20; i++) postMove(state, session, false);
+
+  assert.ok(
+    state.romulan.energy < initialRomEnergy,
+    "neutral planets should still damage the Romulan over multiple ticks",
+  );
+  // But no team score because pcode === DX.NPLN.
+  assert.equal(state.tmscor[TEAM.FED]?.[6] ?? 0, initialFedScore);
+  assert.equal(state.tmscor[TEAM.EMP]?.[6] ?? 0, initialEmpScore);
+});
+
 test("life support: a critically-damaged, undocked ship loses a stardate and dies at empty", () => {
   const { state, session } = setup(7);
   // Must stay ≥ KCRIT AFTER the end-of-turn repair (which heals 300 off every device first).

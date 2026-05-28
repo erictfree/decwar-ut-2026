@@ -32,7 +32,7 @@ import {
 import { ldis, pdist } from "../core/geometry.ts";
 import { phadam } from "../combat/damage.ts";
 import type { Firer } from "../combat/damage.ts";
-import { romdrv } from "../combat/romulan.ts";
+import { romdrv, pharom } from "../combat/romulan.ts";
 import { pridis } from "../comms/messageBus.ts";
 import type { HitEvent } from "../comms/messageBus.ts";
 import type { GameState } from "../core/state.ts";
@@ -281,5 +281,39 @@ function plnatk(state: GameState, session: Session): void {
         (state.bits[j] ?? 0);
       state.bus.makeHit(e, dbits);
     }
+
+    // Source DECWAR.FOR:2826–2845 — after firing on ships, each planet also fires on
+    // the Romulan if it's alive and within range 2.  Note: the Romulan-target phit is
+    // the UNDIVIDED formula (`50 + 30*buildCount`) — no numply divisor (source 2838).
+    const rom = state.romulan;
+    if (!rom.exists) continue;
+    if (!ldis(rom.vPos, rom.hPos, p.vPos, p.hPos, 2)) continue;
+    const rphit = 50 + 30 * p.buildCount;
+    const rid = pdist(p.vPos, p.hPos, rom.vPos, rom.hPos);
+    const rr = pharom(state, rphit, rid);
+    if (pcode !== DX.NPLN) {
+      const t = pteam as 1 | 2;
+      // Source line 2840-2843: damage AND lethal-kill bonus both route to KPRKIL for
+      // captured planets attacking the Romulan.
+      state.tmscor[t]![PT.KPRKIL] = (state.tmscor[t]![PT.KPRKIL] ?? 0) + rr.ihita;
+      if (rr.klflg !== 0) state.tmscor[t]![PT.KPRKIL] = (state.tmscor[t]![PT.KPRKIL] ?? 0) + 5000;
+    }
+    const re = blankEvent();
+    re.dispfr = state.board.disp(p.vPos, p.hPos);
+    re.dispto = DX.ROM * 100;
+    re.ihita = rr.ihita;
+    re.vfrom = p.vPos;
+    re.hfrom = p.hPos;
+    re.vto = rom.vPos;
+    re.hto = rom.hPos;
+    re.klflg = rr.klflg;
+    re.shstfr = p.buildCount;
+    re.shstto = rom.energy;
+    re.shcnto = 1;
+    const rsideFlag = pteam as 0 | 1 | 2;
+    const rdbits =
+      pridis(state, rom.vPos, rom.hPos, KRANGE, rsideFlag) |
+      pridis(state, rom.vPos, rom.hPos, 4, 0);
+    state.bus.makeHit(re, rdbits);
   }
 }
