@@ -96,9 +96,13 @@ export async function build(state: GameState, session: Session): Promise<boolean
     if ((bases[j]?.strength ?? 0) <= 0) { slot = j; break; }
   }
   if (slot === 0) {
-    // Defensive: no empty slot found despite the guard. Revert and refuse.
+    // Defensive: no empty slot found despite the upstream guard.  Source DECWAR.FOR:
+    // 553–558 reverts buildCount (back to 4) but DOES NOT refund the +2500 KPBBAS that
+    // was already added at source line 546.  This is a source quirk (line 546's
+    // unconditional add happens BEFORE the slot scan at line 553-555) -- preserve as
+    // written, even though it's only reachable if `nbase[team]` desyncs from the actual
+    // base slots.  See CLAUDE.md "do not smooth over strange behavior".
     planet.buildCount -= 1;
-    session.tpoint[PT.KPBBAS] = (session.tpoint[PT.KPBBAS] ?? 0) - 500 * 5;
     emitBasesStillFunctional(session);
     return false;
   }
