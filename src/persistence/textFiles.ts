@@ -62,8 +62,14 @@ export interface GripeRecord {
 
 /** The pluggable seam — file-backed in production, in-memory in tests. */
 export interface TextStore {
-  /** Return the full HELP text for `topic` (case-insensitive). "*" → command-list page; ""
-   * (or no topic) → general no-arg HELP page. Always returns a non-empty string. */
+  /**
+   * Return HELP text. Semantics match the source DECWAR22.HLP convention:
+   *   - `""` (no topic)  → the whole file, verbatim (intro + every section)
+   *   - `"*"`            → the list of available topic names (a TOC)
+   *   - `"<TOPIC>"`      → just that section (case-insensitive). On miss, falls back
+   *                        to a notice + the TOC so the user can see what's available.
+   * Always returns a non-empty string.
+   */
   help(topic?: string): string;
   /** Return the full NEWS text. Always returns a non-empty string. */
   news(): string;
@@ -75,18 +81,27 @@ export interface TextStore {
 
 // ── HELP section walker ──────────────────────────────────────────────────────────────────
 
+/** Parsed HELP file: the raw text (for the no-arg "whole file" output), the per-topic
+ *  sections (key = uppercase topic name; "" = pre-header intro), and the topic-name list
+ *  (preserves source order) for the `HELP *` TOC. */
+export interface ParsedHelp {
+  raw: string;
+  sections: Map<string, string>;
+  topics: string[]; // in source order
+}
+
 /**
- * Walk a HELP file: split into sections keyed by leading `.HEADER` lines. The text BEFORE
- * the first header is the "general" / no-arg section; subsequent sections are looked up
- * by case-insensitive header name. Lines are joined with CRLF to match the source's
- * terminal output style.
+ * Walk a HELP file: capture the raw text, split into sections keyed by leading `.HEADER`
+ * lines (source DECWAR22.HLP convention), and track the ordered topic list for the
+ * `HELP *` TOC.  The text BEFORE the first header is the "intro" section (key = ""); the
+ * header form is a leading `.` followed by a non-whitespace topic name (avoids matching
+ * a bare `.` which is the GRIPE terminator).
  */
-export function parseHelp(text: string): Map<string, string> {
+export function parseHelp(text: string): ParsedHelp {
   const sections = new Map<string, string>();
-  // Split on any line that starts with a `.` (followed by a non-space, to avoid matching
-  // a bare period — which is GRIPE terminator semantics, not HELP).
+  const topics: string[] = [];
   const lines = text.split(/\r\n|\n|\r/);
-  let currentTopic = ""; // "" = general / pre-header text
+  let currentTopic = ""; // "" = intro / pre-header text
   let buf: string[] = [];
   const flush = () => {
     if (buf.length > 0) {
@@ -99,39 +114,62 @@ export function parseHelp(text: string): Map<string, string> {
     if (m) {
       flush();
       currentTopic = m[1]!.toUpperCase();
+      topics.push(currentTopic);
       continue;
     }
     buf.push(line);
   }
   flush();
-  return sections;
+  return { raw: text, sections, topics };
 }
 
-/** Look up `topic` (case-insensitive) in a parsed HELP map. Returns "" when not found. */
-function pickSection(sections: Map<string, string>, topic: string): string {
-  if (topic === "") return sections.get("") ?? "";
-  return sections.get(topic.toUpperCase()) ?? "";
+/**
+ * Format the topic list (HELP *) as a clean multi-column page.  Source's DECWAR.HLP
+ * doesn't include a TOC; this is a small ergonomic addition.
+ */
+function renderTopicList(topics: readonly string[]): string {
+  const lines: string[] = ["", "HELP topics available:", ""];
+  const colWidth = 12; // 12 chars + 1 space = 13-wide cells
+  const cols = 5;
+  for (let i = 0; i < topics.length; i += cols) {
+    const row = topics.slice(i, i + cols).map((t) => t.padEnd(colWidth)).join(" ").trimEnd();
+    lines.push(`  ${row}`);
+  }
+  lines.push("");
+  lines.push("Type 'HELP <topic>' for details, or 'HELP' for the full manual.");
+  lines.push("");
+  return lines.join("\r\n");
+}
+
+/**
+ * Look up `topic` in a parsed HELP file, applying the source-faithful semantics:
+ *   - `""` → raw whole file
+ *   - `"*"` → topic TOC
+ *   - `"<TOPIC>"` → that section, or a "no entry" notice + TOC fallback
+ */
+function dispatchHelp(parsed: ParsedHelp, topic: string, fallback: string): string {
+  if (topic === "") return parsed.raw || fallback;
+  if (topic === "*") return renderTopicList(parsed.topics);
+  const section = parsed.sections.get(topic.toUpperCase());
+  if (section !== undefined && section !== "") return section;
+  return `\r\n(No HELP entry for '${topic}'.)\r\n${renderTopicList(parsed.topics)}`;
 }
 
 // ── InMemory store (tests / no-config) ───────────────────────────────────────────────────
 
 export class InMemoryTextStore implements TextStore {
   readonly gripes: GripeRecord[] = [];
-  readonly #help: Map<string, string>;
+  readonly #help: ParsedHelp;
   readonly #news: string;
 
   constructor(opts: { helpText?: string; newsText?: string } = {}) {
-    const helpText = opts.helpText ?? `${HELP_GENERAL_FALLBACK}.*\r\n${HELP_STAR_FALLBACK}`;
+    const helpText = opts.helpText ?? HELP_GENERAL_FALLBACK;
     this.#help = parseHelp(helpText);
     this.#news = opts.newsText ?? NEWS_FALLBACK;
   }
 
   help(topic = ""): string {
-    const found = pickSection(this.#help, topic);
-    if (found !== "") return found;
-    // Topic not found → fall back to the general page with a notice.
-    if (topic !== "") return `\r\n(No HELP entry for '${topic}'.)\r\n${this.#help.get("") ?? HELP_GENERAL_FALLBACK}`;
-    return HELP_GENERAL_FALLBACK;
+    return dispatchHelp(this.#help, topic, HELP_GENERAL_FALLBACK);
   }
 
   news(): string { return this.#news; }
@@ -147,28 +185,24 @@ export class InMemoryTextStore implements TextStore {
  */
 export class FileTextStore implements TextStore {
   readonly #dir: string;
-  #helpSections: Map<string, string> | null = null; // lazy-loaded
+  #help: ParsedHelp | null = null; // lazy-loaded
 
   constructor(dir: string) { this.#dir = dir; }
 
-  #ensureHelpLoaded(): Map<string, string> {
-    if (this.#helpSections) return this.#helpSections;
+  #ensureHelpLoaded(): ParsedHelp {
+    if (this.#help) return this.#help;
     const path = `${this.#dir}/decwar.hlp`;
     if (!existsSync(path)) {
-      this.#helpSections = parseHelp(`${HELP_GENERAL_FALLBACK}.*\r\n${HELP_STAR_FALLBACK}`);
-      return this.#helpSections;
+      this.#help = parseHelp(HELP_GENERAL_FALLBACK);
+      return this.#help;
     }
     const text = readFileSync(path, "utf8");
-    this.#helpSections = parseHelp(text);
-    return this.#helpSections;
+    this.#help = parseHelp(text);
+    return this.#help;
   }
 
   help(topic = ""): string {
-    const sections = this.#ensureHelpLoaded();
-    const found = pickSection(sections, topic);
-    if (found !== "") return found;
-    if (topic !== "") return `\r\n(No HELP entry for '${topic}'.)\r\n${sections.get("") ?? HELP_GENERAL_FALLBACK}`;
-    return HELP_GENERAL_FALLBACK;
+    return dispatchHelp(this.#ensureHelpLoaded(), topic, HELP_GENERAL_FALLBACK);
   }
 
   news(): string {

@@ -9,6 +9,7 @@ import { createInitialGameState } from "../../src/core/state.ts";
 import { createSession } from "../../src/core/session.ts";
 import { activate } from "../../src/lifecycle/activate.ts";
 import { help, news, gripe, debug } from "../../src/commands/help.ts";
+import { InMemoryTextStore } from "../../src/persistence/textFiles.ts";
 import { tokenize } from "../../src/parser/tokenizer.ts";
 import { Rng } from "../../src/core/rng.ts";
 import { ScriptedIo } from "../harness/scriptedIo.ts";
@@ -41,24 +42,28 @@ test("HELP with no args prints the general help summary", () => {
   assert.match(out(a), /In-game commands/);
 });
 
-test("HELP * prints the command list", () => {
+test("HELP * prints the topic table-of-contents", () => {
+  // Seed the text store with a few .TOPIC sections so the TOC has content to show.
   const { state, a } = fresh();
+  state.text = new InMemoryTextStore({
+    helpText: "intro\n.STATUS\nstatus help\n.TORPEDOES\ntorp help\n",
+  });
   setArgs(a, "HELP *");
   reset(a);
   help(state, a);
+  assert.match(out(a), /HELP topics available:/);
   assert.match(out(a), /STATUS/);
-  assert.match(out(a), /TORPEDOS/);
+  assert.match(out(a), /TORPEDOES/);
 });
 
-test("HELP <topic> falls back to the command list with a notice", () => {
+test("HELP <topic> falls back to a notice + TOC when the topic is unknown", () => {
   const { state, a } = fresh();
   setArgs(a, "HELP PHASERS");
   reset(a);
   help(state, a);
   // Tokens are capped at 5 chars (parser/tokenizer) → "PHASERS" becomes "PHASE" in display.
-  // F-3 text-store path: unknown topic → "(No HELP entry for '<topic>'.)" + general page.
   assert.match(out(a), /\(No HELP entry for 'PHASE'\.\)/);
-  assert.match(out(a), /Federation vs\. Empire/); // general fallback page included
+  assert.match(out(a), /HELP topics available:/);
 });
 
 test("HELP under RED alert is refused", () => {

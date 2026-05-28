@@ -19,46 +19,61 @@ import {
 
 test("parseHelp splits into sections by '.<TOPIC>' headers", () => {
   const text = "Intro line.\nMore intro.\n.PHASERS\nLine A\nLine B\n.TORPS\nT1\nT2\n";
-  const m = parseHelp(text);
-  assert.match(m.get("") ?? "", /Intro line/);
-  assert.match(m.get("PHASERS") ?? "", /Line A/);
-  assert.match(m.get("PHASERS") ?? "", /Line B/);
-  assert.match(m.get("TORPS") ?? "", /T1/);
+  const p = parseHelp(text);
+  assert.match(p.sections.get("") ?? "", /Intro line/);
+  assert.match(p.sections.get("PHASERS") ?? "", /Line A/);
+  assert.match(p.sections.get("PHASERS") ?? "", /Line B/);
+  assert.match(p.sections.get("TORPS") ?? "", /T1/);
+});
+
+test("parseHelp captures raw text and ordered topic list", () => {
+  const text = ".FIRST\nA\n.SECOND\nB\n.THIRD\nC\n";
+  const p = parseHelp(text);
+  assert.equal(p.raw, text);
+  assert.deepEqual(p.topics, ["FIRST", "SECOND", "THIRD"]);
 });
 
 test("parseHelp upper-cases header names for case-insensitive lookup", () => {
   const text = ".phasers\nLine A\n";
-  const m = parseHelp(text);
-  assert.ok(m.has("PHASERS"));
-  assert.equal(m.has("phasers"), false);
+  const p = parseHelp(text);
+  assert.ok(p.sections.has("PHASERS"));
+  assert.equal(p.sections.has("phasers"), false);
 });
 
 test("parseHelp handles a file with no headers (single general section)", () => {
   const text = "Just text\nMore text\n";
-  const m = parseHelp(text);
-  assert.match(m.get("") ?? "", /Just text/);
-  assert.equal(m.size, 1);
+  const p = parseHelp(text);
+  assert.match(p.sections.get("") ?? "", /Just text/);
+  assert.equal(p.sections.size, 1);
+  assert.equal(p.topics.length, 0);
 });
 
 // ── InMemoryTextStore ────────────────────────────────────────────────────────────────────
 
-test("InMemoryTextStore default help() returns the embedded general page", () => {
+test("InMemoryTextStore default help() returns the whole intro text", () => {
   const store = new InMemoryTextStore();
   const text = store.help("");
+  // The embedded fallback IS the intro, so no-arg returns it verbatim.
   assert.match(text, /Federation vs\. Empire/);
 });
 
-test("InMemoryTextStore default help('*') returns the command list", () => {
-  const store = new InMemoryTextStore();
+test("InMemoryTextStore help('*') with custom sections lists the topic names", () => {
+  const store = new InMemoryTextStore({
+    helpText: "intro\n.ALPHA\na\n.BETA\nb\n",
+  });
   const text = store.help("*");
-  assert.match(text, /BASES BUILD CAPTURE/);
+  assert.match(text, /HELP topics available:/);
+  assert.match(text, /ALPHA/);
+  assert.match(text, /BETA/);
 });
 
-test("InMemoryTextStore default help('unknown') falls back with notice + general page", () => {
-  const store = new InMemoryTextStore();
+test("InMemoryTextStore default help('unknown') falls back with notice + topic list", () => {
+  const store = new InMemoryTextStore({
+    helpText: "intro\n.PHASERS\nphaser help\n",
+  });
   const text = store.help("UNKNOWN");
   assert.match(text, /\(No HELP entry for 'UNKNOWN'\.\)/);
-  assert.match(text, /Federation vs\. Empire/);
+  assert.match(text, /HELP topics available:/);
 });
 
 test("InMemoryTextStore can be seeded with custom HELP text via opts", () => {
