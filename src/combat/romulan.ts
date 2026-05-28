@@ -339,9 +339,19 @@ export function romdrv(state: GameState): void {
     rom.exists = true;
     rom.energy = state.rng.iran(200) + 200;
     rom.numSpawned += 1;
+    // Spawn-time scanMask: every team with a ship inside KRANGE has "seen" the spawn
+    // (matches the iwhat=11 detection broadcast recipient set). Used by LIST gating.
+    const detectMask = pridis(state, c.v, c.h, KRANGE, 0);
+    rom.scanMask = 0;
+    for (let i = 1; i <= state.alive.length - 1; i++) {
+      if ((detectMask & (1 << (i - 1))) !== 0) {
+        const teamBit = i <= 9 ? 1 : 2;
+        rom.scanMask |= teamBit;
+      }
+    }
     state.bus.makeHit(
       romEvent(state, { iwhat: 11, vfrom: c.v, hfrom: c.h, vto: c.v, hto: c.h }),
-      pridis(state, c.v, c.h, KRANGE, 0),
+      detectMask,
     );
     if (state.rng.iran(10) === 1) romspkBroadcast(state); // 1-in-10 spawn taunt (G-4)
     const t = dist(state);
@@ -376,5 +386,6 @@ export function torom(state: GameState): { ihita: number; klflg: number } {
 /** DEADRO — the Romulan dies: clear its cell, mark absent. */
 export function deadro(state: GameState): void {
   state.romulan.exists = false;
+  state.romulan.scanMask = 0; // wipe known-state so the next spawn starts fresh
   state.board.setdsp(state.romulan.vPos, state.romulan.hPos, 0);
 }

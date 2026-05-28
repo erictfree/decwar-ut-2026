@@ -52,6 +52,7 @@ export function resetHighSegment(state: GameState): void {
   state.romulan.moveCounter = 0;
   state.romulan.torpPause = 0;
   state.romulan.phaserPause = 0;
+  state.romulan.scanMask = 0;
   for (let i = 1; i <= 8; i++) state.romulan.score[i] = 0;
   state.nkill = 0;
   state.kilndx = 0;

@@ -100,11 +100,111 @@ test("unrecognized keyword → 'Illegal keyword' (faithful lsts02; covers deferr
   assert.match(out(a), /Illegal keyword CLOSE/);
 });
 
+// ── scanMask "known" gating (source LSTUPD DECWAR.FOR:1921–1932) ──────────────────────────
+
+test("LIST TARGETS on a fresh game hides far-away enemy bases (must scan first)", () => {
+  const { state, a } = fresh();
+  // All Empire bases were placed > KRANGE from Excalibur with a high probability under
+  // a fresh build; with Rng(1) the positions are deterministic. Verify NONE of the
+  // unscanned far bases leak into TARGETS, by checking that no Empire base inside the
+  // listing has distance > KRANGE.
+  setArgs(a, "LIST TARGETS");
+  list(state, a, "LIST");
+  const o = out(a);
+  const ship = state.ships[a.who]!;
+  const enemyBases = state.bases[2]!;
+  for (let i = 1; i <= 10; i++) {
+    const b = enemyBases[i]!;
+    const distance = Math.max(Math.abs(b.vPos - ship.vPos), Math.abs(b.hPos - ship.hPos));
+    if (distance > 10) {
+      // Out of KRANGE + never scanned → must NOT appear in the listing.
+      assert.ok(
+        !o.includes(`${b.vPos}-${b.hPos}`),
+        `Empire base at (${b.vPos},${b.hPos}) [distance ${distance}] should be hidden`,
+      );
+    }
+  }
+});
+
+test("LIST TARGETS reveals an enemy base once SCAN covers its sector", () => {
+  const { state, a } = fresh();
+  // Find a far-away Empire base, mark it scanned by our team, verify it now appears.
+  const ship = state.ships[a.who]!;
+  const enemyBases = state.bases[2]!;
+  let farBase = null;
+  for (let i = 1; i <= 10; i++) {
+    const b = enemyBases[i]!;
+    const distance = Math.max(Math.abs(b.vPos - ship.vPos), Math.abs(b.hPos - ship.hPos));
+    if (distance > 10) { farBase = b; break; }
+  }
+  assert.ok(farBase, "expected at least one Empire base outside KRANGE for this seed");
+  farBase!.scanMask |= a.team; // simulate SCAN having covered it earlier
+
+  setArgs(a, "LIST TARGETS");
+  list(state, a, "LIST");
+  const o = out(a);
+  assert.ok(
+    o.includes(`${farBase!.vPos}-${farBase!.hPos}`),
+    `scanned Empire base at (${farBase!.vPos},${farBase!.hPos}) should appear in TARGETS`,
+  );
+});
+
+test("LIST TARGETS hides the Romulan until detected (scanMask)", () => {
+  const { state, a } = fresh();
+  // Plant the Romulan far away with no scanMask set.
+  state.romulan.exists = true;
+  state.romulan.vPos = 5;
+  state.romulan.hPos = 5;
+  state.romulan.scanMask = 0;
+  const ship = state.ships[a.who]!;
+  // Verify the planted location is actually out of KRANGE (sanity guard on fixture).
+  const dist = Math.max(Math.abs(ship.vPos - 5), Math.abs(ship.hPos - 5));
+  assert.ok(dist > 10, `fixture: Romulan must be out of range (got ${dist})`);
+
+  setArgs(a, "LIST TARGETS");
+  list(state, a, "LIST");
+  const beforeScan = out(a);
+  assert.doesNotMatch(beforeScan, /Romulan/);
+
+  // Now mark it as scanned by this team and try again.
+  state.romulan.scanMask |= a.team;
+  reset(a);
+  setArgs(a, "LIST TARGETS");
+  list(state, a, "LIST");
+  assert.match(out(a), /Romulan/);
+});
+
+test("LIST TARGETS shows everything when pasflg is set (privileged god-mode)", () => {
+  const { state, a } = fresh();
+  a.pasflg = true;
+  setArgs(a, "LIST TARGETS");
+  list(state, a, "LIST");
+  const o = out(a);
+  // With pasflg, every Empire base should be visible regardless of distance/scan.
+  const enemyBases = state.bases[2]!;
+  for (let i = 1; i <= 10; i++) {
+    const b = enemyBases[i]!;
+    assert.ok(
+      o.includes(`${b.vPos}-${b.hPos}`),
+      `pasflg should show Empire base at (${b.vPos},${b.hPos})`,
+    );
+  }
+});
+
 test("FRIENDLY shows own ships; ENEMY shows the other side", () => {
   const { state, a } = fresh();
-  // Add a Buzzard (Empire) so there is enemy content
+  // Add a Buzzard (Empire) so there is enemy content, then move it adjacent to Excalibur
+  // so it's within KRANGE for the visibility gate (LSTUPD source line 1923).
   const b = createSession(new ScriptedIo([]));
   activate(state, b);
+  const me = state.ships[a.who]!;
+  const enemyShip = state.ships[b.who]!;
+  // Move Buzzard adjacent — clear old cell, set new cell, update ship struct so the
+  // board.disp(s.vPos, s.hPos) > 0 invariant LIST relies on still holds.
+  state.board.setdsp(enemyShip.vPos, enemyShip.hPos, 0);
+  enemyShip.vPos = me.vPos;
+  enemyShip.hPos = me.hPos + 1;
+  state.board.setdsp(enemyShip.vPos, enemyShip.hPos, 2 * 100 + b.who);
 
   setArgs(a, "LIST FRIENDLY");
   list(state, a, "LIST");

@@ -13,7 +13,6 @@
  * short-format column-label spacing is approximate (Phase-G polish).
  */
 import { equal } from "../parser/match.ts";
-import { ldis } from "../core/geometry.ts";
 import { CRLF } from "../render/output.ts";
 import { SYNTAX, SHIP_TAGS } from "../render/strings.ts";
 import { KRANGE, KGALV, KGALH, KNBASE, TOK } from "../core/constants.ts";
@@ -132,18 +131,23 @@ export function scan(state: GameState, session: Session, srscan: boolean): void 
   const hMax = Math.min(ship.hPos + dist[2]!, KGALH);
   const hMin = Math.max(ship.hPos - dist[3]!, 1);
 
-  // Mark planets / enemy bases in range as scanned by our side (LIST "known" flag).
-  const enemy = (3 - session.team) as 1 | 2;
+  // Mark planets, enemy bases, and the Romulan as scanned by our side if they fall
+  // within the displayed grid (LIST "known" flag — source DECWAR.FOR:1932 `scnbts`).
+  const teamBit = session.team;
+  const inGrid = (v: number, h: number): boolean =>
+    v >= vMin && v <= vMax && h >= hMin && h <= hMax;
   for (let i = 1; i <= state.nplnet; i++) {
     const pl = state.planets[i];
-    if (pl && ldis(pl.vPos, pl.hPos, ship.vPos, ship.hPos, KRANGE)) pl.scanMask |= session.team;
+    if (pl && inGrid(pl.vPos, pl.hPos)) pl.scanMask |= teamBit;
   }
+  const enemy = (3 - session.team) as 1 | 2;
   const ebases = state.bases[enemy];
   for (let i = 1; i <= KNBASE; i++) {
     const b = ebases?.[i];
-    if (b && b.strength > 0 && ldis(b.vPos, b.hPos, ship.vPos, ship.hPos, KRANGE)) {
-      b.scanMask |= session.team;
-    }
+    if (b && b.strength > 0 && inGrid(b.vPos, b.hPos)) b.scanMask |= teamBit;
+  }
+  if (state.romulan.exists && inGrid(state.romulan.vPos, state.romulan.hPos)) {
+    state.romulan.scanMask |= teamBit;
   }
 
   session.io.write(renderGrid(state, session, vMin, vMax, hMin, hMax));

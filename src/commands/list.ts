@@ -2,7 +2,8 @@
  * LIST / SUMMARY / BASES / PLANETS / TARGETS — list or summarize galaxy objects.
  *
  * Source: `DECWAR.FOR:1352–1382` (entries), `LSTSCN 1512–1739` (grammar), `LSTFLG/LSTOUT/
- * LSTSUM/LSTOBJ 1743–2110`; analysis Deliverable #4 §2. Classification: Preserve semantically.
+ * LSTSUM/LSTOBJ 1743–2110`, and `LSTUPD 1915–1950` (visibility gate). Classification:
+ * Preserve semantically.
  *
  * FAITHFUL CORE. The 5 commands set their default object/side/range/output filters; the common
  * keyword grammar (object SHIPS/BASES/PLANETS, sides FEDERATION/HUMAN/EMPIRE/KLINGON/NEUTRAL/
@@ -10,8 +11,15 @@
  * selected by side+type+range and rendered as per-object lines (enemy `*` flag, name, location,
  * shield%/builds) and/or summary counts.
  *
+ * Visibility (source LSTUPD lines 1921–1932): an object is visible to the listing player iff
+ *   - within KRANGE of the player's ship, OR
+ *   - friendly (side == team), OR
+ *   - privileged (pasflg set), OR
+ *   - the object's scanMask has the player's team bit (previously scanned via SCAN, or
+ *     in the Romulan's case, in range at spawn time).
+ *
  * DEFERRED (→ "Illegal keyword"): CLOSEST, AND/`&` group composition, coordinate filters,
- * ship-name filters, PORTS; and the exact LSTOBJ column tabs / scanMask "known" gating.
+ * ship-name filters, PORTS; and the exact LSTOBJ column tabs.
  */
 import { equal } from "../parser/match.ts";
 import { pdist } from "../core/geometry.ts";
@@ -110,6 +118,20 @@ export function list(state: GameState, session: Session, kind: ListKind): void {
   const sideSel = (side: number): boolean =>
     (side === 1 && f.fed) || (side === 2 && f.emp) || (side === 0 && f.neu) || (side === 3 && f.rom);
 
+  /**
+   * Source-faithful visibility gate (LSTUPD at DECWAR.FOR:1921–1932). An object is
+   * visible if friendly, within KRANGE of the player's ship, privileged, or previously
+   * scanned (the `scanMask` carries the team bit).  Pass `side === 0` for neutral
+   * planets (always visible if in range) and `side === 3` for the Romulan.
+   */
+  const teamBit = session.team; // 1 (Fed) or 2 (Emp)
+  const isKnown = (v: number, h: number, side: number, scanMask: number): boolean => {
+    if (session.pasflg) return true; // privileged: god-mode visibility
+    if (side === team) return true;  // friendly: always known
+    if (pdist(v, h, ship.vPos, ship.hPos) <= KRANGE) return true; // within KRANGE
+    return (scanMask & teamBit) !== 0; // scanned before (or detected at spawn for Rom)
+  };
+
   let out = CRLF;
   const counts = new Map<string, number>(); // type label → count
   const bump = (label: string): void => {
@@ -126,11 +148,16 @@ export function list(state: GameState, session: Session, kind: ListKind): void {
   };
 
   // Romulan
-  if (f.rom && state.romulan.exists && inRange(state.romulan.vPos, state.romulan.hPos)) {
+  if (
+    f.rom &&
+    state.romulan.exists &&
+    inRange(state.romulan.vPos, state.romulan.hPos) &&
+    isKnown(state.romulan.vPos, state.romulan.hPos, 3, state.romulan.scanMask)
+  ) {
     if (f.list) out += objLine(DX.ROM * 100, 3, state.romulan.vPos, state.romulan.hPos, "");
     if (f.summary) { bump("Romulan"); nt++; }
   }
-  // ships
+  // ships — enemy ships also obey isKnown (no persistent scanMask; KRANGE-only check)
   if (f.ships) {
     for (let i = 1; i <= KNPLAY; i++) {
       const side = i <= KNPLAY / 2 ? 1 : 2;
@@ -138,11 +165,13 @@ export function list(state: GameState, session: Session, kind: ListKind): void {
       const s = state.ships[i];
       if (!s || (state.alive[i] ?? 0) >= 0 || state.board.disp(s.vPos, s.hPos) <= 0) continue;
       if (!inRange(s.vPos, s.hPos)) continue;
+      if (!isKnown(s.vPos, s.hPos, side, 0)) continue;
       if (f.list) out += objLine(side * 100 + i, side, s.vPos, s.hPos, ` ${osflt(s.shieldCond * s.shieldPct, 0, false)}%`);
       if (f.summary) { bump(OBJ_NAMES[side]!); if (side !== team) nt++; }
     }
   }
-  // bases
+  // bases — scanMask carries detection state (own-side bit seeded at build, enemy-side
+  // bit OR'd in by SCAN coverage or by combat)
   if (f.bases) {
     for (let side = 1 as 1 | 2; side <= 2; side = (side + 1) as 1 | 2) {
       if (!sideSel(side)) continue;
@@ -150,6 +179,7 @@ export function list(state: GameState, session: Session, kind: ListKind): void {
       for (let j = 1; j <= KNBASE; j++) {
         const b = bases?.[j];
         if (!b || b.strength <= 0 || !inRange(b.vPos, b.hPos)) continue;
+        if (!isKnown(b.vPos, b.hPos, side, b.scanMask)) continue;
         if (f.list) out += objLine((side + 2) * 100 + j, side, b.vPos, b.hPos, "");
         if (f.summary) { bump(OBJ_NAMES[side + 2]!); if (side !== team) nt++; }
       }
@@ -165,6 +195,7 @@ export function list(state: GameState, session: Session, kind: ListKind): void {
       if (f.capturedOnly && side === 0) continue;
       if (!sideSel(side)) continue;
       if (!inRange(p.vPos, p.hPos)) continue;
+      if (!isKnown(p.vPos, p.hPos, side, p.scanMask)) continue;
       if (f.list) out += objLine(cls * 100 + i, side, p.vPos, p.hPos, ` (${p.buildCount})`);
       if (f.summary) { bump(OBJ_NAMES[cls]!); if (side === 3 - team) nt++; }
     }

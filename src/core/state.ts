@@ -88,6 +88,10 @@ export interface Romulan {
   phaserPause: number; // rppaus
   score: Tenths[]; // rsr(8) ×10, 1-based 1..8
   numSpawned: number; // numrom — cumulative spawn count (POINTS divisor)
+  /** Which teams have scanned this Romulan (LIST "known" bitmask). Set by SCAN + by the
+   * iwhat=11 detection broadcast on spawn. Cleared on DEADRO / next spawn. Source: the
+   * generic `scnbts` argument to LSTUPD at DECWAR.FOR:1932. */
+  scanMask: number;
 }
 
 /** The shared world (`/hiseg/`). */
@@ -271,6 +275,7 @@ export function createInitialGameState(rng: Rng = new Rng(), clock: Clock = new 
       phaserPause: 0,
       score: zeros1(KNPOIN),
       numSpawned: 0,
+      scanMask: 0,
     },
     romopt: true, // SETUP default: Romulan Empire involved (yes)
     blhopt: false, // SETUP default: black holes (no)
