@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+
+# Runtime persistence — operator-editable content (decwar.hlp / decwar.nws) IS committed;
+# auto-generated stores (honor roll, gripe log) are runtime artifacts and stay local.
+decwar-honor.json
+data/decwar.grp

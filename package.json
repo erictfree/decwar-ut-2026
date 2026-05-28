@@ -1,0 +1,19 @@
+{
+  "name": "decwar-ts",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Faithful TypeScript/Node/telnet compatibility port of the 1978 PDP-10 game DECWAR (18-player University of Texas version). Increment 1: deterministic core.",
+  "engines": {
+    "node": ">=23.6.0"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "test": "tsc --noEmit && node --test \"test/unit/*.test.ts\"",
+    "test:only": "node --test \"test/unit/*.test.ts\""
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0",
+    "@types/node": "^22.0.0"
+  }
+}

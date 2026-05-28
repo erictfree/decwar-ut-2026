@@ -1,0 +1,312 @@
+
+DECWAR -- Federation vs. Empire space-combat game.
+
+You command a starship in a 75 x 75 galaxy.  Up to 9 captains per side
+(Federation or Empire), plus an optional Romulan NPC.  Win by destroying
+the enemy's bases and capturing the neutral planets; lose if your side's
+bases all fall while planets remain.
+
+Combat is turn-by-turn but real-time: every command runs immediately
+and may invite return fire.  Stack commands on one line with '/'.
+Verbosity is set with SET OUTPUT SHORT|MEDIUM|LONG.
+
+Type 'HELP *' for the command list, or 'HELP <topic>' for details.
+See MANUAL.md (out-of-game) for the full captain's manual.
+
+.*
+In-game commands (abbreviate to a unique prefix):
+
+  Movement:    MOVE  IMPULSE
+  Combat:      PHASERS  TORPEDOS
+  Defense:     SHIELDS  REPAIR  DOCK
+  Engineering: ENERGY  TRACTOR
+  Territory:   BUILD  CAPTURE
+  Sensors:     SCAN  SRSCAN  DAMAGES  LIST  BASES  PLANETS  TARGETS  SUMMARY
+  Info:        STATUS  POINTS  TIME  USERS  TYPE
+  Comms:       RADIO  TELL
+  Session:     SET  HELP  NEWS  GRIPE  QUIT
+  Privileged:  *PASSWORD  *DEBUG
+
+Pre-game commands (at the PG> prompt): ACTIVATE, HONORROLL, *ZAP, plus
+any of the info/session commands above.
+
+.MOVE
+MOVE [<v> <h>] -- warp to sector (v, h).
+
+Energy cost: 40 * ia^2 per sector, where ia is the absolute distance.
+With no args, MOVE prompts you for 'Coordinates:'.  Coords can be
+absolute or relative (see SET ICDEF).
+
+While tractoring a friendly ship, MOVE drags it along at 3x energy.
+
+.IMPULSE
+IMPULSE [<v> <h>] -- short-range slow movement.
+
+Like MOVE but limited to one sector per pulse; cheaper but slower.
+Damaged warp engines fall back to impulse automatically (max warp 3).
+
+Pushing impulse too hard triggers an overheat warning from the
+engineering officer; ignore it at your peril.
+
+.PHASERS
+PHASERS [<phit>] <v> <h> -- fire phasers at sector (v, h).
+
+phit is the energy invested (50..500, default 200).  Higher phit means
+more damage but more strain.  Two phaser banks; the cooler fires first.
+
+If your shields are up the shot costs an extra 2000 energy for the
+high-speed shield control dip.  Each shot risks an overheat
+(iran(100) * phit > 18900) that damages the phaser device.
+
+Range cap: 10 sectors.  Friendly fire is refused.
+
+.TORPEDOS
+TORPEDOS [<count>] <v> <h> -- fire 1, 2, or 3 photon torpedoes.
+
+Each torp consumes one of your 10 stored torpedoes.  Per torp:
+  - Misfire chance: iran(100) > 96 (aborts the rest of the burst).
+  - Deflection by full-shielded targets (ran() check, plus a second
+    conditional check if a misfire just happened).
+  - Damage on hit: 4000 + 4000 * ran() (tenths of a damage unit).
+
+Star hits: aran <= 80 -> nova (3x3 blast); aran > 80 -> star unaffected.
+Planet hits: aran >= 75 decrements buildCount; at 0 the planet is gone.
+Black hole hits: torpedo swallowed, no damage.
+
+.SHIELDS
+SHIELDS UP -- raise shields (default state on activation).
+SHIELDS DOWN -- lower shields.
+SHIELDS TRANSFER <pct> -- move charge between shields and energy.
+
+Shield strength is stored as 0..1000 (= 0..100%).  Energy converts to
+shield charge at a 25:1 ratio; raising shields from empty costs energy.
+
+Shields-up is required for combat survival; shields-down is required
+for tractor coupling and docking.
+
+.REPAIR
+REPAIR ALL -- repair every damaged device (docked only).
+REPAIR <n> -- repair device n only.
+REPAIR DAMAGE -- repair every device past a damage threshold.
+
+You must be docked at a friendly base (or captured planet) to repair.
+Time cost: roughly (repsiz * 8) ms per pulse, where repsiz is the total
+damage being repaired.
+
+.DOCK
+DOCK -- dock at an adjacent friendly base or captured planet.
+
+Adjacent (range 1) friendly base: full refit (shields, energy, torps,
+life support, devices) at a 2x rate.  Captured planet: half refit.
+
+While docked your ship is also defended by the host (range 4 for bases,
+range 2 for planets).
+
+'DOCK STATUS' appends a STATUS report after docking.
+
+.ENERGY
+ENERGY <ship> <amount> -- transfer energy to a friendly ship in range.
+
+10% is lost in transit; you still pay the full amount.  The receiver
+sees an OUTH12 "transfers N units of energy to" message.
+
+.TRACTOR
+TRACTOR <ship> -- engage tractor beam on a friendly ship.
+TRACTOR OFF -- release the beam.
+TRACTOR alone (with active beam) -- also releases.
+
+Both ships must have shields down.  While tractoring, your MOVE drags
+the towed ship along at 3x energy cost.
+
+Mutual coupling: both ships are in each other's 'trstat' slot until one
+side breaks the beam.
+
+.BUILD
+BUILD -- raise the build count on an adjacent captured friendly planet.
+
+Five build stages; each adds 500 points to your team.  Stage 5 promotes
+the planet into a new starbase (+2500 bonus) IF your side has a free
+base slot.
+
+You must be adjacent (range 1) to a captured friendly planet.  The
+planet must already be friendly (use CAPTURE to convert it first).
+
+.CAPTURE
+CAPTURE -- capture an adjacent enemy or neutral planet for your side.
+
+Damages the planet's defenses (PHADAM); damage scoring goes to your
+team.  Captured enemy planets kill any docked enemy ships (BASKIL).
+Each capture is worth 1000 points.
+
+You must be adjacent (range 1) and your shields must be down.
+
+.SCAN
+SCAN [<dir>] [<range>] -- range x range grid around your ship.
+
+Direction: N, S, E, W, NE, NW, SE, SW, or omit for all-directions.
+Default range: 8.  Grid is clamped to your terminal width.
+
+Cell symbols:
+  .       empty space
+   E/F/.. Federation ship (captain initial)
+   B/C/.. Empire ship
+  <>/)(   Federation/Empire base
+  ??      Romulan
+   @      neutral planet
+  @F/@E   Federation/Empire planet
+   *      star
+  (space) black hole
+
+.SRSCAN
+SRSCAN -- short-range scan; compact view of nearby space.
+
+A 1-line variant of SCAN with smaller cells.  Useful inside dense
+sectors where the full SCAN grid clutters the screen.
+
+.DAMAGES
+DAMAGES -- per-device damage report.
+
+Devices (1..9):
+  1 Shields    2 Warp       3 Impulse
+  4 Life Sup   5 Torps      6 Phasers
+  7 Computer   8 Radio      9 Tractor
+
+A device past the KCRIT threshold is "critically damaged" and refuses
+to function.  REPAIR (while docked) fixes them.
+
+.LIST
+LIST [<filter>] [<range>] [SUMMARY] -- list known objects.
+
+Filters:
+  BASES, PLANETS, TARGETS (enemy ships/bases/Romulan)
+  FRIENDLY, ENEMY (alignment)
+  ALL (everything)
+  CAPTURED (only captured planets)
+  LIST (synonym)
+
+With a numeric range, only objects within N sectors of you are listed.
+With SUMMARY, only counts are printed (no per-object lines).
+
+BASES, PLANETS, TARGETS, SUMMARY are also standalone commands that
+abbreviate the LIST variants.
+
+.STATUS
+STATUS [<items>] -- report your ship's vitals.
+
+No args: stardate, condition, location, torpedoes, energy, damage,
+shields, radio.  With named items (e.g. STATUS Energy Shields), only
+those are reported.
+
+Verbosity controlled by SET OUTPUT:
+  SHORT  -- one line, single-letter labels
+  MEDIUM -- one per line, 7-char labels
+  LONG   -- one per line, full labels, tab-aligned values
+
+.POINTS
+POINTS [<flag>] -- score breakdown.
+
+Flags: ME / I (default in-game), FEDERATION / HUMANS, EMPIRE / KLINGONS,
+ROMULANS, ALL.  Categories:
+  Damage to enemies / bases / Romulan
+  Enemies destroyed
+  Planets captured / destroyed
+  Bases built
+  Stars destroyed
+
+Includes totals, ship count, and pts/player + pts/stardate rows.
+
+.RADIO
+RADIO ON  / RADIO OFF -- silence or restore incoming radio chatter.
+RADIO GAG <ship> / RADIO UNGAG <ship> -- drop a specific sender.
+
+When OFF you stop receiving TELL messages from other ships and the
+Romulan.  Bases/planets/system broadcasts always come through.
+
+.TELL
+TELL <recipient(s)>; <body> -- send a radio message.
+
+Recipients: ship names (Excalibur), or group names (ALL, FEDERATION,
+EMPIRE, FRIENDLY, ENEMY, HUMAN, KLINGON).  Multiple OK: TELL Excalibur Buzzard; hi
+
+Separator ';' starts the body.  Recipients see the message at their
+next radio drain (heartbeat ~2s if idle).
+
+TELL ROMULAN; <body> -- address the Romulan.  If alive, you get a
+personalized taunt back (some quite graphic).  If dead, "Communications:
+Captain, we cannot raise the Romulan."
+
+.SET
+SET <switch> [<value>] -- session preferences.
+
+Switches:
+  OUTPUT  SHORT / MEDIUM / LONG
+  PROMPT  NORMAL / INFORMATIVE
+  SCANS   SHORT / LONG
+  ICDEF   ABSOLUTE / RELATIVE      (input coords)
+  OCDEF   ABSOLUTE / RELATIVE / BOTH  (output coords)
+  NAME    <name>                   (captain name, persisted)
+
+With no value, SET prompts you for the value.
+
+Privileged (after *PASSWORD): ROMOPT, ENDFLG, BHREMV.
+
+.TIME
+TIME -- game time and your runtime.
+
+Five lines: Game's time, Ship's time, Run time, Job time, Time of day.
+Ship + Run are skipped in pre-game.
+
+.USERS
+USERS -- active captains, their ships, sides.
+
+Privileged players also see locations (KABS,SHORT).
+
+.TYPE
+TYPE OUTPUT -- show your current SET preferences.
+TYPE OPTION -- show the game options (Romulan? Black holes? Tournament?).
+
+Use TYPE OUTPUT to verify what verbosity / coords mode you're in;
+TYPE OPTION to see what the first player chose when activating.
+
+.GRIPE
+GRIPE -- send feedback to the server operator.
+
+You'll be prompted to enter lines; terminate with a single '.' on its
+own line, or with a blank line.  Up to 16 lines.  Persisted as JSON-Lines
+in data/decwar.grp.
+
+Refused under RED alert -- don't gripe while being shot at.
+
+.QUIT
+QUIT -- leave the game.
+
+You'll be asked 'Do you really want to quit?' -- answer YES to exit.
+Anything else returns to the command prompt.
+
+A ^C (Ctrl-C) under non-RED alert also quits, without confirmation.
+Under RED alert ^C is refused with 'Cannot leave under red alert'.
+
+.HONORROLL
+HONORROLL -- pre-game only: display the persistent honor roll.
+
+Per-side top-5 captains by score, split into 'Emerald Star Cluster'
+(still alive, quit) and 'Golden Galaxy Medal' (fallen in combat).
+
+Stored in DECWAR_HONOR_PATH (default ./decwar-honor.json) across server
+restarts.  Cleared by *ZAP (privileged).
+
+.ROMULAN
+The Romulan -- the NPC enemy of both sides.
+
+Spawns probabilistically as the game progresses (moveCounter * 2 must
+exceed numply, then iran(5) gates).  On spawn it gets iran(200) + 200
+energy and may broadcast a taunt (1-in-10) to a random side.
+
+Each Romulan turn: pick the nearest visible ship or base, move warp 4
+toward it, then attack with either phasers (flat 200 damage) or
+torpedoes (full 3-burst with misfire/deflection/nova logic).
+
+Phaser hits on the Romulan: ((100 + iran(100)) * phit) / (10 * id).
+Torpedo hits: min(iran(4000), 2000).  When erom <= 0, it dies (DEADRO).
+
+TELL ROMULAN; ... triggers a personalized taunt back at you.

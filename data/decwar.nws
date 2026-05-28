@@ -1,0 +1,22 @@
+
+DECWAR — News
+-------------
+
+Welcome, Captain.
+
+This is the operator news file.  Anything you write here is what players see
+when they type 'NEWS' at the command prompt.  Edit at any time — the file is
+re-read on every NEWS command, so there's no need to restart the server.
+
+Source heritage: this file is the analog of the 1978 PDP-10 DECWAR.NWS file
+served via the original WARMAC.MAC NEWS routine (lines 4629–4676).
+
+Common uses:
+  * Tournament announcements ("Tournament Saturday at 20:00 EST")
+  * Server maintenance windows
+  * Patch notes when you upgrade the port
+  * Galaxy-wide flavor text and trash-talk
+
+When this file is missing, the in-game NEWS command falls back to a built-in
+"No news today, Captain." placeholder.  See MANUAL.md for the player-facing
+view and PORT.md for the persistence model.
