@@ -364,8 +364,12 @@ export function snova(state: GameState, firer: NovaFirer, vcInit: number, hcInit
   const starStack: { v: number; h: number }[] = [];
   let vc = vcInit, hc = hcInit;
 
-  // The original setdsp(iVc,iHc,0) happens at the call site (TORP/ROMTOR clears the star
-  // before calling snova). Here we walk the cascade.
+  // Source DECWAR.FOR:3798 clears the originating star here, at SNOVA entry, so any
+  // caller (current or future) can rely on the 3×3 walk not picking it up as a chained
+  // star.  Our existing callers (TORP, ROMTOR) also clear it upfront; calling setdsp(0)
+  // on an already-empty cell is harmless, so the duplicate is fine for now.
+  state.board.setdsp(vcInit, hcInit, 0);
+
   for (;;) {
     const vLo = Math.max(1, vc - 1), vHi = Math.min(KGALV, vc + 1);
     const hLo = Math.max(1, hc - 1), hHi = Math.min(KGALH, hc + 1);

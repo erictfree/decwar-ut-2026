@@ -224,3 +224,21 @@ test("SNOVA chains adjacent stars on iran(5) != 5 (source DECWAR.FOR:3808; G-8 a
   // at least one. Asserting any chained outcome is robust against the 1/25 corner case.
   assert.ok(chained > 0, "expected at least one seed to chain a star (iran(5)!=5 → 80%)");
 });
+
+test("SNOVA self-clears the originating star (source DECWAR.FOR:3798)", () => {
+  // Source: SNOVA's first instruction is `call setdsp(iVc, iHc, 0)` — the originating
+  // star is cleared INSIDE the routine, so callers don't strictly need to pre-clear
+  // and the 3×3 walk can't accidentally re-collect it as a "chained" star.  This
+  // test verifies snova() handles a non-pre-cleared center cell correctly.
+  const state = createInitialGameState(new Rng(5));
+  const io = new ScriptedIo([]);
+  const a = createSession(io);
+  activate(state, a);
+  const vc = 40, hc = 40;
+  // Plant a star at the center and DO NOT pre-clear it (the caller would normally do
+  // this, but source semantics put the clear inside snova).
+  state.board.setdsp(vc, hc, DX.STAR * 100);
+  snova(state, novaFirer(a), vc, hc);
+  // Center cell should be cleared by snova itself.
+  assert.equal(state.board.disp(vc, hc), 0, "snova should clear its own originating star");
+});
