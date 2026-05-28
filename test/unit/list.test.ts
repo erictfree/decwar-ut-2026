@@ -57,15 +57,28 @@ test("BASES (own side) lists only own-team bases, no `*` flag", () => {
   assert.doesNotMatch(o, /^\*/m); // no enemy flags for own-side BASES
 });
 
-test("PLANETS defaults to range 10 → 'in range' summary string when SUMMARY added", () => {
+test("PLANETS SUMMARY extends range to ∞ → 'in game' summary string (source DECWAR.FOR:1734)", () => {
+  // SUMMARY keyword without an explicit numeric range sets range = MAXINT
+  // (source line 1734: `if ((imask .and. RNGBIT) .eq. 0)  range = MAXINT`).
+  // PLANETS' default range of KRANGE is overridden — the summary line says "in game",
+  // not "in range".
   const { state, a } = fresh();
-  setArgs(a, "PLANETS SUMMARY"); // exercise the SUMMARY keyword
+  setArgs(a, "PLANETS SUMMARY");
   list(state, a, "PLANETS");
-  // Either no planets in range (nothing) or a count line ending with " in range"
+  const o = out(a);
+  assert.match(o, /\d+ \w+ planets? in game/);
+  assert.doesNotMatch(o, / in range/);
+});
+
+test("PLANETS SUMMARY 5 keeps the user-supplied range → 'in specified range'", () => {
+  // With an explicit numeric range, the SUMMARY-extends-to-MAXINT rule does NOT fire
+  // (source line 1734 checks `imask & RNGBIT == 0` first), so the user's range stands.
+  const { state, a } = fresh();
+  setArgs(a, "PLANETS SUMMARY 5");
+  list(state, a, "PLANETS");
   const o = out(a);
   if (/\d+ \w+ planets?/.test(o)) {
-    assert.match(o, / in range/);
-    assert.doesNotMatch(o, / in game/);
+    assert.match(o, / in specified range/);
   }
 });
 
@@ -215,6 +228,62 @@ test("LIST ALL DOES flip friendly bits on (per source — only TARGETS is specia
   // Own Fed bases (always visible) + Excalibur (own ship under f.fed=true) should appear.
   assert.match(o, /Federation base/);
   assert.match(o, /Excalibur/);
+});
+
+// ── LIST/SUMMARY keyword mutual-exclusion (source DECWAR.FOR:3100–3128, 3200–3228) ──────
+
+test("BASES (default both modes) + LIST keyword → list only (narrows the default)", () => {
+  // BASES defaults to BOTH list + summary output.  Typing the LIST keyword should
+  // narrow it to list-only (source: cmd != SUMCMD and SUMMARY-keyword not seen → clear).
+  const { state, a } = fresh();
+  setArgs(a, "BASES LIST");
+  list(state, a, "BASES");
+  const o = out(a);
+  assert.match(o, /Federation base/);
+  // No summary count line — it was cleared by LIST keyword.
+  assert.doesNotMatch(o, /\d+ \w+ bases?/);
+});
+
+test("BASES + SUMMARY keyword → summary only (clears the default list)", () => {
+  const { state, a } = fresh();
+  setArgs(a, "BASES SUMMARY");
+  list(state, a, "BASES");
+  const o = out(a);
+  // No per-base lines (those would contain " base   ").
+  assert.doesNotMatch(o, /Federation base\s+\d+-\d+/);
+  // But the count line IS present.
+  assert.match(o, /\d+ \w+ bases?/);
+});
+
+test("BASES + LIST + SUMMARY (both keywords typed) → both outputs preserved", () => {
+  const { state, a } = fresh();
+  setArgs(a, "BASES LIST SUMMARY");
+  list(state, a, "BASES");
+  const o = out(a);
+  assert.match(o, /Federation base\s+\d+-\d+/); // per-base line
+  assert.match(o, /\d+ \w+ bases?/);            // summary count
+});
+
+test("LIST command + SUMMARY keyword → both (cmd==LSTCMD branch preserves list)", () => {
+  // Source line 1736: `if ((cmd .ne. LSTCMD) .and. ...) lmask = SUMBIT` — the cmd-is-LIST
+  // branch does NOT clear list, so LIST SUMMARY yields both.
+  const { state, a } = fresh();
+  setArgs(a, "LIST SUMMARY");
+  list(state, a, "LIST");
+  const o = out(a);
+  // Per-object line present (any class will do).
+  assert.match(o, /Federation base\s+\d+-\d+/);
+  // And a summary count too.
+  assert.match(o, /\d+ \w+ /);
+});
+
+test("SUMMARY command + LIST keyword → both (cmd==SUMCMD branch preserves summary)", () => {
+  const { state, a } = fresh();
+  setArgs(a, "SUMMARY LIST");
+  list(state, a, "SUMMARY");
+  const o = out(a);
+  assert.match(o, /Federation base\s+\d+-\d+/); // list line
+  assert.match(o, /\d+ \w+ /);                   // summary count
 });
 
 test("LIST TARGETS shows everything when pasflg is set (privileged god-mode)", () => {

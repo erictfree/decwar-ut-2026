@@ -47,6 +47,10 @@ interface Filter {
   userRange: boolean;
   list: boolean;
   summary: boolean;
+  /** Has the LIST keyword been typed this invocation? (source `imask & LSTBIT`) */
+  kwList: boolean;
+  /** Has the SUMMARY keyword been typed this invocation? (source `imask & SUMBIT`) */
+  kwSummary: boolean;
 }
 
 function defaults(kind: ListKind, team: 1 | 2): Filter {
@@ -54,6 +58,7 @@ function defaults(kind: ListKind, team: 1 | 2): Filter {
     ships: false, bases: false, planets: false,
     fed: false, emp: false, neu: false, rom: false, capturedOnly: false,
     range: INF, userRange: false, list: true, summary: false,
+    kwList: false, kwSummary: false,
   };
   switch (kind) {
     case "LIST":
@@ -89,8 +94,29 @@ function applyKeyword(f: Filter, k: string, team: 1 | 2, kind: ListKind): boolea
     if (!f.userRange) f.range = INF;
     return true;
   }
-  if (equal(k, "LIST") !== 0) { f.list = true; return true; }
-  if (equal(k, "SUMMARY") !== 0) { f.summary = true; return true; }
+  if (equal(k, "LIST") !== 0) {
+    // Source DECWAR.FOR:3100–3128 (LIST keyword handler). Always enables list output;
+    // additionally clears summary IFF the entry command is NOT SUMMARY and SUMMARY
+    // hadn't already been typed.  Effect:
+    //   LIST LIST              → list only (default already)
+    //   SUMMARY LIST           → both (cmd=SUMCMD branch — preserve summary)
+    //   BASES LIST             → list only (BASES defaults to both; LIST narrows it)
+    //   BASES SUMMARY LIST     → both (SUMMARY keyword already enabled summary)
+    f.list = true;
+    if (kind !== "SUMMARY" && !f.kwSummary) f.summary = false;
+    f.kwList = true;
+    return true;
+  }
+  if (equal(k, "SUMMARY") !== 0) {
+    // Source DECWAR.FOR:3200–3228 (SUMMARY keyword handler). Mirrors LIST: enables
+    // summary output; clears list IFF entry command is NOT LIST and LIST hadn't been
+    // typed.  Also extends range to MAXINT if no numeric range was given (source 1734).
+    f.summary = true;
+    if (!f.userRange) f.range = INF;
+    if (kind !== "LIST" && !f.kwList) f.list = false;
+    f.kwSummary = true;
+    return true;
+  }
   return false; // CLOSEST / AND / PORTS / ship names / coords → deferred
 }
 
