@@ -70,7 +70,7 @@ function defaults(kind: ListKind, team: 1 | 2): Filter {
 }
 
 /** Apply one keyword to the filter; returns false if the keyword is unsupported/illegal. */
-function applyKeyword(f: Filter, k: string, team: 1 | 2): boolean {
+function applyKeyword(f: Filter, k: string, team: 1 | 2, kind: ListKind): boolean {
   if (equal(k, "SHIPS") !== 0) { f.ships = true; f.bases = false; f.planets = false; return true; }
   if (equal(k, "BASES") !== 0) { f.bases = true; f.ships = false; f.planets = false; return true; }
   if (equal(k, "PLANETS") !== 0) { f.planets = true; f.ships = false; f.bases = false; return true; }
@@ -80,7 +80,15 @@ function applyKeyword(f: Filter, k: string, team: 1 | 2): boolean {
   if (equal(k, "FRIENDLY") !== 0) { f.fed = team === TEAM.FED; f.emp = team === TEAM.EMP; f.neu = false; f.rom = false; return true; }
   if (equal(k, "ENEMY") !== 0 || equal(k, "TARGETS") !== 0) { f.fed = team === TEAM.EMP; f.emp = team === TEAM.FED; f.neu = false; f.rom = true; return true; }
   if (equal(k, "CAPTURED") !== 0) { f.capturedOnly = true; f.planets = true; f.ships = false; f.bases = false; f.neu = false; return true; }
-  if (equal(k, "ALL") !== 0) { f.fed = true; f.emp = true; f.neu = true; f.rom = true; if (!f.userRange) f.range = INF; return true; }
+  if (equal(k, "ALL") !== 0) {
+    // Source DECWAR.FOR:1700: `if (((imask .and. SIDMSK) .eq. 0) .and. (cmd .ne. TARCMD))
+    // smask = FEDBIT .or. EMPBIT .or. NEUBIT .or. ROMBIT`. ALL extends the side filter
+    // to "everything" — EXCEPT for TARGETS, where ALL only extends the range to ∞ but
+    // keeps the enemy-only filter intact (so friendly bases don't appear as "targets").
+    if (kind !== "TARGETS") { f.fed = true; f.emp = true; f.neu = true; f.rom = true; }
+    if (!f.userRange) f.range = INF;
+    return true;
+  }
   if (equal(k, "LIST") !== 0) { f.list = true; return true; }
   if (equal(k, "SUMMARY") !== 0) { f.summary = true; return true; }
   return false; // CLOSEST / AND / PORTS / ship names / coords → deferred
@@ -107,7 +115,7 @@ export function list(state: GameState, session: Session, kind: ListKind): void {
     }
     if (t.type[i] !== TOK.KALF) continue;
     const k = t.text[i] ?? "";
-    if (!applyKeyword(f, k, team)) {
+    if (!applyKeyword(f, k, team, kind)) {
       session.io.write(`${CRLF}${LSTS02}${k}${CRLF}`); // Illegal keyword (covers deferred grammar)
       return;
     }

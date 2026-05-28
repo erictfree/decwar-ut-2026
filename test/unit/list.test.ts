@@ -174,6 +174,49 @@ test("LIST TARGETS hides the Romulan until detected (scanMask)", () => {
   assert.match(out(a), /Romulan/);
 });
 
+test("TARGETS ALL extends range to infinity but keeps the enemy-only filter (source DECWAR.FOR:1700)", () => {
+  // Source: `if (((imask .and. SIDMSK) .eq. 0) .and. (cmd .ne. TARCMD)) smask = …` —
+  // for TARCMD (TARGETS), ALL does NOT flip friendly bits on; it only extends range.
+  // Without this guard our port was showing the player's own ship + own bases under
+  // "TARGETS ALL", which is misleading (friendlies are not targets).
+  const { state, a } = fresh();
+  // Pre-scan a far Empire base so we can verify the range extension is taking effect.
+  const enemyBases = state.bases[2]!;
+  let farBase = null;
+  for (let i = 1; i <= 10; i++) {
+    const b = enemyBases[i]!;
+    const distance = Math.max(
+      Math.abs(b.vPos - state.ships[a.who]!.vPos),
+      Math.abs(b.hPos - state.ships[a.who]!.hPos),
+    );
+    if (distance > 10) { farBase = b; break; }
+  }
+  assert.ok(farBase, "test fixture: need at least one far Empire base");
+  farBase!.scanMask |= a.team;
+
+  setArgs(a, "TARGETS ALL");
+  list(state, a, "TARGETS");
+  const o = out(a);
+  // Friendlies must NOT appear (the bug fix).
+  assert.doesNotMatch(o, /Excalibur|Farragut|Intrepid|Lexington|Nimitz|Savannah|Trenton|Vulcan|Yorktown/);
+  assert.doesNotMatch(o, /Federation base/);
+  // The pre-scanned far Empire base SHOULD appear (proves range was extended past KRANGE).
+  assert.ok(
+    o.includes(`${farBase!.vPos}-${farBase!.hPos}`),
+    `far scanned Empire base at (${farBase!.vPos},${farBase!.hPos}) should appear under TARGETS ALL`,
+  );
+});
+
+test("LIST ALL DOES flip friendly bits on (per source — only TARGETS is special-cased)", () => {
+  const { state, a } = fresh();
+  setArgs(a, "LIST ALL");
+  list(state, a, "LIST");
+  const o = out(a);
+  // Own Fed bases (always visible) + Excalibur (own ship under f.fed=true) should appear.
+  assert.match(o, /Federation base/);
+  assert.match(o, /Excalibur/);
+});
+
 test("LIST TARGETS shows everything when pasflg is set (privileged god-mode)", () => {
   const { state, a } = fresh();
   a.pasflg = true;
