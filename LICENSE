@@ -1,0 +1,51 @@
+MIT License
+
+Copyright (c) 2026 Eric Freeman
+University of Texas at Austin, Department of Arts and Entertainment Technology
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+===============================================================================
+
+NOTICE — Original DECWAR Source (1978–79)
+
+This TypeScript port (the "Software") is a re-implementation of DECWAR, the
+18-player Federation-vs-Empire space-combat game written 1978–79 for the
+DEC PDP-10 at the University of Texas (the "Original Source"). Game mechanics,
+formulas, RNG behavior, message text, and other product elements are derived
+from the Original Source and are reproduced under the good-faith belief that
+the Original Source was distributed for academic and hobbyist use without
+restriction (via the DECUS tape exchange and successor channels).
+
+The Original Source files (located under
+`../decwar source and associated files/`) retain their original authors'
+attribution and are NOT covered by the MIT grant above. They are included in
+this repository as historical reference material, in the `utexas/utexas23-reconstruction/`
+reconstruction tree. The Original Source's specific license terms are
+**not formally verified** as of this writing; if you intend to redistribute
+or build upon those files (as opposed to this TS port), confirm their
+disposition with the original authors or the University of Texas first.
+
+This port deliberately excludes the CompuServe-era (DrForbin/Merlyn) edits
+that may carry separate commercial-distribution terms — see `PORT.md`
+§"What was simplified" and `../analysis/12-cross-agent-reconciliation.md` §7.
+
+If you are an original author or contributor and want the attribution
+clarified, expanded, or corrected, please open an issue or contact the
+maintainer.

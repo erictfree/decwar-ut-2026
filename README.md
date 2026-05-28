@@ -105,9 +105,15 @@ These rules govern any change to the engine. Violating them risks divergence fro
 
 ## License
 
-The TypeScript port is original work and is **MIT-licensed** (separately from the
-original DECWAR FORTRAN source, which is included as a reference and carries its own
-authors' attribution). A near-term plan is to split this repo into:
+The TypeScript port is original work, **MIT-licensed** — copyright Eric Freeman,
+University of Texas at Austin, Department of Arts and Entertainment Technology
+(see `LICENSE`).
+
+The original 1978–79 DECWAR FORTRAN/MACRO-10 source is included as a historical
+reference and carries its own authors' attribution; its specific distribution
+terms are not formally verified — see the second half of `LICENSE` for the notice.
+
+A near-term plan is to split this repo into:
 
 - **`decwar-ts` (core game)** — the engine itself, source-derived; same license posture as
   the game portion.

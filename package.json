@@ -1,9 +1,11 @@
 {
   "name": "decwar-ts",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Faithful TypeScript/Node/telnet compatibility port of the 1978 PDP-10 game DECWAR (18-player University of Texas version). Increment 1: deterministic core.",
+  "description": "Faithful TypeScript/Node/telnet compatibility port of the 1978 PDP-10 game DECWAR (18-player University of Texas version).",
+  "license": "MIT",
+  "author": "Eric Freeman <eric@wickedlysmart.com> (University of Texas at Austin, Department of Arts and Entertainment Technology)",
   "engines": {
     "node": ">=23.6.0"
   },
