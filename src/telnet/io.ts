@@ -64,10 +64,18 @@ export class TelnetSocketIO implements TelnetIO {
   }
 
   #negotiate(): void {
+    // Negotiate character mode at connection time.  WILL ECHO + WILL SGA tells the client
+    // "I (server) echo input and won't send GO-AHEAD."  DO SGA asks the client to also
+    // suppress GA on its end — this is the second half of the standard kludge-line-mode
+    // → character-mode trigger that BSD `telnet` (macOS's default) needs to see before it
+    // sends each typed byte immediately instead of buffering a line.  Without the
+    // explicit DO SGA, BSD telnet may stay in line mode and render typed input on its
+    // own line below the prompt.  DO NAWS asks for window-size updates (source `terwid`).
     this.#socket.write(
       Buffer.from([
         IAC, WILL, OPT_ECHO,
         IAC, WILL, OPT_SGA,
+        IAC, DO, OPT_SGA,
         IAC, DO, OPT_NAWS,
       ]),
     );
