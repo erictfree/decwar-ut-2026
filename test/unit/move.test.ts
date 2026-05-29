@@ -98,6 +98,102 @@ test("a move that overdraws energy leaves it negative (loop will detect death)",
   assert.ok(ship.energy < 0, `energy=${ship.energy}`);
 });
 
+// ── Verbosity-aware messages (source DECWAR.FOR:2180–2207) ────────────────────────────────
+
+/** Re-run move with a specific oflg by replaying tokens after setting verbosity. */
+async function moveWithOflg(cmd: string, oflg: -1 | 0 | 1, impulse = false) {
+  const setup = shipAt10();
+  setup.session.oflg = oflg;
+  setup.session.tokens = tokenize(cmd, 0).tokens;
+  const tc = await move(setup.state, setup.session, impulse);
+  return { ...setup, tc };
+}
+
+test("IMPULSE >1 sector emits MOVE1A prefix only in LONG mode", async () => {
+  const med = await moveWithOflg("IMPULSE 12 10", 0, true);
+  assert.doesNotMatch(med.io.output, /impulse engines won't take it/);
+  assert.match(med.io.output, /Maximum speed warp 1\./);
+
+  const long = await moveWithOflg("IMPULSE 12 10", 1, true);
+  assert.match(long.io.output, /Captain, the impulse engines won't take it\./);
+  assert.match(long.io.output, /Maximum speed warp 1\./);
+});
+
+test("warp > 6 emits MOVE3S in MEDIUM, MOVE3L (Engineering Officer) in LONG", async () => {
+  const med = await moveWithOflg("MOVE 25 25", 0);
+  assert.match(med.io.output, /Maximum warp 6\./);
+  assert.doesNotMatch(med.io.output, /Engineering Officer/);
+
+  const long = await moveWithOflg("MOVE 25 25", 1);
+  assert.match(long.io.output, /Engineering Officer:  The engines won't take it Captain\./);
+  assert.match(long.io.output, /I can only give you warp 6\./);
+});
+
+test("warp 5/6 overheat warning: MOVE5S in SHORT, MOVE5L in MEDIUM, ENGOFF+MOVE5L in LONG", async () => {
+  // Warp 5 (ia=5) at (15, 10) from (10, 10).  Doesn't reliably overheat — just verify
+  // the pre-overheat warning text is correct per oflg.
+  const short = await moveWithOflg("MOVE 15 10", -1);
+  assert.match(short.io.output, /Engines overheating\./);
+  assert.doesNotMatch(short.io.output, /our engines are overheating/);
+  assert.doesNotMatch(short.io.output, /Engineering Officer/);
+
+  const med = await moveWithOflg("MOVE 15 10", 0);
+  assert.match(med.io.output, /Captain, our engines are overheating!/);
+  assert.doesNotMatch(med.io.output, /Engineering Officer/);
+
+  const long = await moveWithOflg("MOVE 15 10", 1);
+  assert.match(long.io.output, /Engineering Officer:  /);
+  assert.match(long.io.output, /Captain, our engines are overheating!/);
+});
+
+test("MOVE09 stardate-repair message appears after overheat damage in non-SHORT modes", async () => {
+  // Iterate seeds until one triggers the warp-6 overheat damage path under MEDIUM
+  // mode, then verify MOVE09 message present.
+  for (let seed = 1; seed <= 200; seed++) {
+    const setup = shipAt10({ seed });
+    setup.session.oflg = 0; // medium
+    setup.session.tokens = tokenize("MOVE 16 10", 0).tokens;
+    await move(setup.state, setup.session, false);
+    if (setup.io.output.includes("units of damage")) {
+      // Overheat fired in MEDIUM → MOVE09 should be present.
+      assert.match(setup.io.output, /Captain, repairs will take approximately/);
+      assert.match(setup.io.output, /stardates\./);
+      return;
+    }
+  }
+  assert.fail("expected at least one seed to trigger warp-6 overheat");
+});
+
+test("MOVE09 suppressed under SHORT mode after overheat damage", async () => {
+  for (let seed = 1; seed <= 200; seed++) {
+    const setup = shipAt10({ seed });
+    setup.session.oflg = -1; // SHORT
+    setup.session.tokens = tokenize("MOVE 16 10", 0).tokens;
+    await move(setup.state, setup.session, false);
+    if (setup.io.output.includes("units of damage")) {
+      assert.doesNotMatch(setup.io.output, /repairs will take/);
+      return;
+    }
+  }
+  assert.fail("expected at least one seed to trigger warp-6 overheat");
+});
+
+test("warp-damaged ship trying warp >3 emits MOVE2S in MEDIUM, MOVE2L in LONG", async () => {
+  const med = shipAt10();
+  med.state.devices[1]![2] = 100; // DEV.KDWARP = 2 (warp engines)
+  med.session.tokens = tokenize("MOVE 15 10", 0).tokens; // ia=5
+  med.session.oflg = 0;
+  await move(med.state, med.session, false);
+  assert.match(med.io.output, /Engines damaged, warp 3 max\./);
+
+  const long = shipAt10();
+  long.state.devices[1]![2] = 100;
+  long.session.tokens = tokenize("MOVE 15 10", 0).tokens;
+  long.session.oflg = 1;
+  await move(long.state, long.session, false);
+  assert.match(long.io.output, /our warp engines are damaged\.  I can only give you warp 3\./);
+});
+
 test("through the loop: MOVE advances the stardate and STATUS reflects the new state", async () => {
   const { state, session, io } = shipAt10({ seed: 1, lines: ["MOVE 12 13", "STATUS", "QUIT"] });
   io.onHangup = () => {

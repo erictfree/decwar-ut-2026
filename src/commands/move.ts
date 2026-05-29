@@ -21,15 +21,22 @@ import { oflt } from "../render/format.ts";
 import {
   WRPDAM,
   IMPDAM,
+  MOVE1A,
   MOVE1B,
+  MOVE2L,
   MOVE2S,
+  MOVE3L,
   MOVE3S,
+  MOVE5L,
   MOVE5S,
   MOVE06,
   MOVE08,
+  MOVE09,
   MOVE10,
+  ENGOFF,
   ERROR1,
   ERROR2,
+  STRDAT,
 } from "../render/strings.ts";
 import { KCRIT, DEV, COND, DX, OFLG } from "../core/constants.ts";
 import type { GameState } from "../core/state.ts";
@@ -75,28 +82,48 @@ export async function move(
   let d = 0;
   if ((dev[DEV.KDCOMP] ?? 0) >= KCRIT) d = (state.rng.ran() - 0.5) / 2; // DRAW 2 (conditional)
 
-  // Speed limits.
+  // Speed limits. Verbosity-aware messages per source DECWAR.FOR:2180–2207 (each warp
+  // / impulse refusal has SHORT vs MEDIUM/LONG variants; the engineering officer's
+  // long-form lines (MOVE1A, MOVE5L, MOVE09) are only emitted in MEDIUM/LONG).
+  const isShort = session.oflg === OFLG.SHORT;
+  const isLong = session.oflg === OFLG.LONG;
   if (isImpulse) {
     if (ia !== 1) {
-      session.io.write(MOVE1B + CRLF); // "Maximum speed warp 1."
+      // Source 2180–2181: LONG prefixes with MOVE1A; all modes emit MOVE1B.
+      if (isLong) session.io.write(MOVE1A);
+      session.io.write(MOVE1B + CRLF);
       return false;
     }
   } else {
     if (ia > 6) {
-      session.io.write(MOVE3S + ((dev[DEV.KDWARP] ?? 0) > 0 ? "3." : "6.") + CRLF);
+      // Source 2187–2191: SHORT/MEDIUM → MOVE3S; LONG → MOVE3L.  Both then append
+      // "3." (if KDWARP damaged) or "6." (if intact).
+      session.io.write(isLong ? MOVE3L : MOVE3S);
+      session.io.write(((dev[DEV.KDWARP] ?? 0) > 0 ? "3." : "6.") + CRLF);
       return false;
     }
     if ((dev[DEV.KDWARP] ?? 0) > 0 && ia > 3) {
-      session.io.write(MOVE2S + CRLF);
+      // Source 2183–2186: SHORT/MEDIUM → MOVE2S; LONG → MOVE2L.
+      session.io.write((isLong ? MOVE2L : MOVE2S) + CRLF);
       return false;
     }
     if (ia > 4) {
-      // warp 5/6 — risk of overheating
-      session.io.write(MOVE5S + CRLF);
+      // warp 5/6 — risk of overheating.  Source 2194–2207:
+      //   LONG:    ENGOFF + MOVE5L
+      //   MEDIUM:  MOVE5L
+      //   SHORT:   MOVE5S
+      // On overheat (per the tran probability gate): MOVE06 + oflt(randam,3) + MOVE08
+      //   then in MEDIUM/LONG: MOVE09 + oflt(time,2) + STRDAT (where time = randam/30).
+      if (isLong) session.io.write(ENGOFF);
+      session.io.write((isShort ? MOVE5S : MOVE5L) + CRLF);
       const tran = state.rng.iran(100); // DRAW 3 (conditional)
       if ((tran > 80 && ia >= 6) || (tran > 90 && ia === 5)) {
         session.io.write(MOVE06 + oflt(randam, 3, false) + MOVE08 + CRLF);
         dev[DEV.KDWARP] = (dev[DEV.KDWARP] ?? 0) + randam; // overheat damage
+        if (!isShort) {
+          // time = randam / 30 (source line 2153); rendered as oflt with bit=2.
+          session.io.write(MOVE09 + oflt(Math.trunc(randam / 30), 2, false) + STRDAT + CRLF);
+        }
       }
     }
   }
