@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Original DECWAR (FORTRAN/MACRO-10, 1979): Copyright (c) 1979, 2011 Bob Hysick, Jeff Potter, The University of Texas Computation Center, and Harris Newman
+// TypeScript port: Copyright (c) 2026 The University of Texas at Austin, Department of Arts and Entertainment Technologies
+
 /**
  * HELP / NEWS / GRIPE / *Debug — minimal in-memory implementations.
  * Source-pinned WARMAC.MAC:4977–5100 (HELP), 4625–4676 (NEWS), 4682–4960 (GRIPE).

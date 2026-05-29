@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Original DECWAR (FORTRAN/MACRO-10, 1979): Copyright (c) 1979, 2011 Bob Hysick, Jeff Potter, The University of Texas Computation Center, and Harris Newman
+// TypeScript port: Copyright (c) 2026 The University of Texas at Austin, Department of Arts and Entertainment Technologies
+
 /**
  * Tests for the ×10 fixed-point helpers. Pinned to OFLT behavior (WARMAC.MAC:2305–2337) and
  * Deliverable #6 §0.1.

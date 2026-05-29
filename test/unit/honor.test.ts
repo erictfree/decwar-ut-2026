@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Original DECWAR (FORTRAN/MACRO-10, 1979): Copyright (c) 1979, 2011 Bob Hysick, Jeff Potter, The University of Texas Computation Center, and Harris Newman
+// TypeScript port: Copyright (c) 2026 The University of Texas at Austin, Department of Arts and Entertainment Technologies
+
 /**
  * Tests for HONORROLL display (F-3-3). Pinned to WARMAC.MAC:5856–5969 (shosta + dofed/doemp)
  * and SETUP.FOR:110–112 (STRTUP) / 145 (PG> dispatch entry 5).

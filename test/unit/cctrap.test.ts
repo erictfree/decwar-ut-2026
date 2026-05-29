@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Original DECWAR (FORTRAN/MACRO-10, 1979): Copyright (c) 1979, 2011 Bob Hysick, Jeff Potter, The University of Texas Computation Center, and Harris Newman
+// TypeScript port: Copyright (c) 2026 The University of Texas at Austin, Department of Arts and Entertainment Technologies
+
 /**
  * ^C CCTRAP state machine — source DECWAR.FOR:1228–1232 (GETCMD loop):
  *   • ^C while NOT RED alert → forces QUIT (no confirm prompt).

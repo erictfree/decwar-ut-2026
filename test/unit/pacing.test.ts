@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Original DECWAR (FORTRAN/MACRO-10, 1979): Copyright (c) 1979, 2011 Bob Hysick, Jeff Potter, The University of Texas Computation Center, and Harris Newman
+// TypeScript port: Copyright (c) 2026 The University of Texas at Austin, Department of Arts and Entertainment Technologies
+
 /**
  * Pacing — weapon cooldowns + ptime between-prompt pauses.
  * Source: phbank/tobank gating (PHACON 2668, TORP 4415), ptime in DOCK/REPAIR/BUILD/CAPTURE/MOVE.

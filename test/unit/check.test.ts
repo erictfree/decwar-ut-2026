@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Original DECWAR (FORTRAN/MACRO-10, 1979): Copyright (c) 1979, 2011 Bob Hysick, Jeff Potter, The University of Texas Computation Center, and Harris Newman
+// TypeScript port: Copyright (c) 2026 The University of Texas at Austin, Department of Arts and Entertainment Technologies
+
 /**
  * Tests for CHECK/CHKPNT path-stepping. Pinned to DECWAR.FOR:696–769 (endpoints cross-checked
  * by hand). RNG is seeded; straight/45° paths consume no RNG (no near-ties).

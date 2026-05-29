@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Original DECWAR (FORTRAN/MACRO-10, 1979): Copyright (c) 1979, 2011 Bob Hysick, Jeff Potter, The University of Texas Computation Center, and Harris Newman
+// TypeScript port: Copyright (c) 2026 The University of Texas at Austin, Department of Arts and Entertainment Technologies
+
 /**
  * SETUP — the interactive opt-in / side / ship-selection cascade that runs when a player
  * activates. Source: `SETUP.FOR:179–467` (`SETUP` itself) with its `kqsrch` reincarnation

@@ -1,5 +1,20 @@
 # decwar-ts
 
+<p>
+<strong>The University of Texas at Austin</strong><br>
+<strong>Department of Arts and Entertainment Technologies</strong><br>
+Contact: <strong>Eric Freeman</strong> &lt;eric.freeman@austin.utexas.edu&gt;<br>
+More information on DECWAR and related initiatives: <strong>Noah Smith</strong> &lt;noahhsmith@gmail.com&gt; &middot; <a href="https://decwar.org">decwar.org</a>
+</p>
+
+> **License and attribution.** The original DECWAR (FORTRAN IV / MACRO-10, 1978–79)
+> is © 1979, 2011 Bob Hysick, Jeff Potter, The University of Texas Computation
+> Center, and Harris Newman, released under the GNU General Public License v3 or
+> later.  This TypeScript port is a derivative work, © 2026 The University of
+> Texas at Austin, Department of Arts and Entertainment Technologies, also
+> released under GPL v3 or later as required by the GPL.  See `LICENSE` and
+> `NOTICE` for the full terms.
+
 A faithful TypeScript / Node.js / telnet **compatibility port** of DECWAR — the
 18-player Federation-vs-Empire space-combat game written in 1978–79 for the DEC PDP-10 in
 FORTRAN IV and MACRO-10. This port targets the **original 18-player University of Texas

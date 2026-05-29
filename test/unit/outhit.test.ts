@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Original DECWAR (FORTRAN/MACRO-10, 1979): Copyright (c) 1979, 2011 Bob Hysick, Jeff Potter, The University of Texas Computation Center, and Harris Newman
+// TypeScript port: Copyright (c) 2026 The University of Texas at Austin, Department of Arts and Entertainment Technologies
+
 /**
  * OUTHIT rendering tests (G-1) — pinned to DECWAR.FOR:2393–2585. Verifies the three-way
  * `oflg` dispatch for each of the 15 iwhat codes, the 40-col line wrap, the displacement

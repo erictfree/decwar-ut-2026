@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Original DECWAR (FORTRAN/MACRO-10, 1979): Copyright (c) 1979, 2011 Bob Hysick, Jeff Potter, The University of Texas Computation Center, and Harris Newman
+// TypeScript port: Copyright (c) 2026 The University of Texas at Austin, Department of Arts and Entertainment Technologies
+
 /**
  * Tests for STATUS rendering. Pinned to DECWAR.FOR:3841–3955 and the MSG.MAC labels.
  * (Field-column alignment is a later golden-transcript item; these assert labels + values.)

@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Original DECWAR (FORTRAN/MACRO-10, 1979): Copyright (c) 1979, 2011 Bob Hysick, Jeff Potter, The University of Texas Computation Center, and Harris Newman
+// TypeScript port: Copyright (c) 2026 The University of Texas at Austin, Department of Arts and Entertainment Technologies
+
 /**
  * Concrete TelnetIO over a Node `net.Socket` — the technology-forced replacement for the
  * PDP-10's blocking TTY plus TOPS-10 monitor echo (Deliverable #8 §3/§5/§11, #13 §8).

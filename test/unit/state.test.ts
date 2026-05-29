@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Original DECWAR (FORTRAN/MACRO-10, 1979): Copyright (c) 1979, 2011 Bob Hysick, Jeff Potter, The University of Texas Computation Center, and Harris Newman
+// TypeScript port: Copyright (c) 2026 The University of Texas at Austin, Department of Arts and Entertainment Technologies
+
 /**
  * Tests for GameState construction. Pinned to SETUP.FOR:460–465 (ship init), Deliverable #5
  * §3.1, and the bits[11..18] correction (Deliverable #5 §6 Q1, #12 §2.1).

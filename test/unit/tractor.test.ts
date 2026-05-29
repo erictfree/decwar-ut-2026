@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Original DECWAR (FORTRAN/MACRO-10, 1979): Copyright (c) 1979, 2011 Bob Hysick, Jeff Potter, The University of Texas Computation Center, and Harris Newman
+// TypeScript port: Copyright (c) 2026 The University of Texas at Austin, Department of Arts and Entertainment Technologies
+
 /**
  * TRACTOR — engage/release a tractor beam; MOVE-tow integration.
  * Source-pinned DECWAR.FOR:4442–4519 (TRACTR/TRCOFF); MOVE-tow at 2233–2239; strings 349–357.

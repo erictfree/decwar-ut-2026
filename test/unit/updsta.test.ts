@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Original DECWAR (FORTRAN/MACRO-10, 1979): Copyright (c) 1979, 2011 Bob Hysick, Jeff Potter, The University of Texas Computation Center, and Harris Newman
+// TypeScript port: Copyright (c) 2026 The University of Texas at Austin, Department of Arts and Entertainment Technologies
+
 /**
  * Tests for UPDSTA — honor-roll write on `freeShip` (F-3-4). Pinned to WARMAC.MAC:5556
  * (updsta) and DECWAR.FOR:1076–1107 (FREE). Verifies that:

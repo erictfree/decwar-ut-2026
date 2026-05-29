@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Original DECWAR (FORTRAN/MACRO-10, 1979): Copyright (c) 1979, 2011 Bob Hysick, Jeff Potter, The University of Texas Computation Center, and Harris Newman
+// TypeScript port: Copyright (c) 2026 The University of Texas at Austin, Department of Arts and Entertainment Technologies
+
 /**
  * Tests for hitime / galaxy rebuild after the 5-minute grace (G-6). Pinned to
  * SETUP.FOR:213–215 (the `(hitime-daytim(d)) .gt. 0` gate) and DECWAR.FOR:1090–1091

@@ -1,5 +1,18 @@
 # DECWAR — Captain's Manual
 
+<p>
+<strong>The University of Texas at Austin</strong><br>
+<strong>Department of Arts and Entertainment Technologies</strong><br>
+Contact: <strong>Eric Freeman</strong> &lt;eric.freeman@austin.utexas.edu&gt;<br>
+More information on DECWAR and related initiatives: <strong>Noah Smith</strong> &lt;noahhsmith@gmail.com&gt; &middot; <a href="https://decwar.org">decwar.org</a>
+</p>
+
+> **License and attribution.** Original DECWAR (FORTRAN/MACRO-10, 1979) © 1979,
+> 2011 Bob Hysick, Jeff Potter, The University of Texas Computation Center, and
+> Harris Newman, under GPL v3+.  This TypeScript port © 2026 The University of
+> Texas at Austin, Department of Arts and Entertainment Technologies, also under
+> GPL v3+.  See `LICENSE` / `NOTICE` for full terms.
+
 A guide to playing the TypeScript / telnet port of the 1978 PDP-10 game.
 
 ---

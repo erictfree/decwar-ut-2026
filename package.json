@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "description": "Faithful TypeScript/Node/telnet compatibility port of the 1978 PDP-10 game DECWAR (18-player University of Texas version).",
-  "license": "MIT",
-  "author": "Eric Freeman <eric@wickedlysmart.com> (University of Texas at Austin, Department of Arts and Entertainment Technology)",
+  "license": "GPL-3.0-or-later",
+  "author": "Eric Freeman <eric.freeman@austin.utexas.edu> (University of Texas at Austin, Department of Arts and Entertainment Technologies)",
   "engines": {
     "node": ">=23.6.0"
   },

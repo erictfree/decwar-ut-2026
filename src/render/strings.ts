@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Original DECWAR (FORTRAN/MACRO-10, 1979): Copyright (c) 1979, 2011 Bob Hysick, Jeff Potter, The University of Texas Computation Center, and Harris Newman
+// TypeScript port: Copyright (c) 2026 The University of Texas at Austin, Department of Arts and Entertainment Technologies
+
 /**
  * Verbatim player-facing strings, transcribed byte-for-byte from `MSG.MAC` (and the OCOND
  * condition strings from `WARMAC.MAC:2497–2503`). This text is PRODUCT and is reproduced
