@@ -117,9 +117,18 @@ export function parseHelp(text: string): ParsedHelp {
       topics.push(currentTopic);
       continue;
     }
-    buf.push(line);
+    // Source DECWAR.HLP uses a lone `.` line as a section terminator (the next non-header
+    // text belongs to no topic until the next `.<TOPIC>` header).  Close out the current
+    // section and drop subsequent lines until either a new header or another lone `.`.
+    if (/^\.\s*$/.test(line)) {
+      flush();
+      currentTopic = "__between__"; // sentinel: not the intro, not any topic
+      continue;
+    }
+    if (currentTopic !== "__between__") buf.push(line);
   }
   flush();
+  sections.delete("__between__");
   return { raw: text, sections, topics };
 }
 
@@ -146,12 +155,24 @@ function renderTopicList(topics: readonly string[]): string {
  *   - `""` → raw whole file
  *   - `"*"` → topic TOC
  *   - `"<TOPIC>"` → that section, or a "no entry" notice + TOC fallback
+ *
+ * Matching is prefix-based (source's EQUAL): the user's input matches any section name
+ * that starts with it, case-insensitively.  This matters because the tokenizer truncates
+ * tokens to 5 characters (PDP-10 A5 packing), so `HELP PHASERS` arrives here as `PHASE`
+ * and has to match the `PHASERS` section.  Exact wins over prefix; an ambiguous prefix
+ * (multiple sections share it) falls back to the TOC.
  */
 function dispatchHelp(parsed: ParsedHelp, topic: string, fallback: string): string {
   if (topic === "") return parsed.raw || fallback;
   if (topic === "*") return renderTopicList(parsed.topics);
-  const section = parsed.sections.get(topic.toUpperCase());
-  if (section !== undefined && section !== "") return section;
+  const key = topic.toUpperCase();
+  const exact = parsed.sections.get(key);
+  if (exact !== undefined && exact !== "") return exact;
+  const candidates = parsed.topics.filter((t) => t.startsWith(key));
+  if (candidates.length === 1) {
+    const section = parsed.sections.get(candidates[0]!);
+    if (section !== undefined && section !== "") return section;
+  }
   return `\r\n(No HELP entry for '${topic}'.)\r\n${renderTopicList(parsed.topics)}`;
 }
 

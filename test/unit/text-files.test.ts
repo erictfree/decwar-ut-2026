@@ -173,3 +173,35 @@ test("FileTextStore: appendGripe creates the directory if missing", () => {
 test("HELP_GENERAL_FALLBACK references the in-game command list cue", () => {
   assert.match(HELP_GENERAL_FALLBACK, /HELP \*/);
 });
+
+// ── Prefix matching + lone-dot terminator (PHASE → PHASERS regression) ──────────────────
+
+test("dispatchHelp matches a 5-char prefix to a longer topic (PHASE → PHASERS)", () => {
+  // Tokenizer truncates to 5 chars (PDP-10 A5 packing) — HELP PHASERS arrives as "PHASE".
+  const store = new InMemoryTextStore({
+    helpText: "intro line\r\n.PHASERS\r\nFire phasers at the target.\r\n.PLANETS\r\nPlanet info.\r\n",
+  });
+  const out = store.help("PHASE");
+  assert.match(out, /Fire phasers at the target/);
+  assert.doesNotMatch(out, /Planet info/);
+  assert.doesNotMatch(out, /No HELP entry/);
+});
+
+test("dispatchHelp falls back to TOC when a prefix is ambiguous", () => {
+  // Both topics start with "TOR" — TORPS would be unambiguous, TOR alone is ambiguous.
+  const store = new InMemoryTextStore({
+    helpText: ".TORPS\r\nTorpedo info.\r\n.TORQUE\r\nTorque info.\r\n",
+  });
+  const out = store.help("TOR");
+  assert.match(out, /No HELP entry for 'TOR'/);
+  assert.match(out, /TORPS/);
+  assert.match(out, /TORQUE/);
+});
+
+test("parseHelp treats a lone `.` line as a section terminator", () => {
+  const parsed = parseHelp(".A\r\nA-body\r\n.\r\nbetween text\r\n.B\r\nB-body\r\n");
+  assert.equal(parsed.sections.get("A")?.trim(), "A-body");
+  assert.equal(parsed.sections.get("B")?.trim(), "B-body");
+  assert.equal(parsed.sections.has("__between__"), false);
+  assert.doesNotMatch(parsed.sections.get("A") ?? "", /between text/);
+});

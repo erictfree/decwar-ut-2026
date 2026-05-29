@@ -76,7 +76,10 @@ export async function runLobby(state: GameState, session: Session): Promise<bool
     if (equal(k, "HONORROLL")) {
       honor(state, session); // source SETUP.FOR:110–112; re-prompt afterwards
     } else if (equal(k, "HELP")) {
-      session.io.write(`${CRLF}(Help not implemented yet.)${CRLF}`);
+      // Same text store as in-game HELP — supports "HELP", "HELP *", "HELP <topic>".
+      // Tokenizer already truncates to 5 chars; dispatchHelp does prefix matching.
+      const topic = tok.text[2] ?? "";
+      session.io.write(state.text.help(topic));
     } else if (equal(k, "PREGAME")) {
       session.io.write(PGAME1 + CRLF);
       inDispatch = true;
