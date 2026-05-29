@@ -49,8 +49,16 @@ export function startServer(state: GameState, port: number): Server {
     io.onCtrlC = () => {
       session.ccflg = true;
     };
-    io.write(WELCOME);
-    void runConnection(state, session);
+    // Give the client a tick to process the telnet-option negotiation (WILL ECHO + WILL
+    // SGA + DO SGA + DO NAWS sent from the IO constructor) and switch into character
+    // mode BEFORE we send the first prompt.  Without this, BSD telnet (macOS default)
+    // can render the first user input on a new line below the prompt because it hasn't
+    // finished the kludge-char-mode handshake yet.  100ms is well under the perceptible
+    // delay threshold and reliably lets the round-trip complete.
+    setTimeout(() => {
+      io.write(WELCOME);
+      void runConnection(state, session);
+    }, 100);
   });
   server.listen(port);
   return server;
