@@ -14,7 +14,7 @@ import { CRLF } from "../render/output.ts";
 import type { GameState } from "../core/state.ts";
 import type { Session } from "../core/session.ts";
 
-const WELCOME = `${CRLF}DECWAR -- TypeScript port (Increment 3: lobby + universe + activation)${CRLF}`;
+const WELCOME = `${CRLF}DECWAR ${CRLF}`;
 
 async function runConnection(state: GameState, session: Session): Promise<void> {
   try {
