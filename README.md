@@ -10,8 +10,9 @@ More information on DECWAR and related initiatives: <strong>Noah Smith</strong> 
 > **License and attribution.** The original DECWAR (FORTRAN IV / MACRO-10, 1978–79)
 > is © 1979, 2011 Bob Hysick, Jeff Potter, The University of Texas Computation
 > Center, and Harris Newman, released under the GNU General Public License v3 or
-> later.  This TypeScript port is a derivative work, © 2026 The University of
-> Texas at Austin, Department of Arts and Entertainment Technologies, also
+> later.  This TypeScript port is a derivative work, © 2026 Eric Freeman and
+> The University of Texas at Austin, Department of Arts and Entertainment
+> Technologies, also
 > released under GPL v3 or later as required by the GPL.  See `LICENSE` and
 > `NOTICE` for the full terms.
 
@@ -31,10 +32,11 @@ with defect/reassigned prompts). The honor roll persists across server restarts.
 detects game-end and broadcasts the banner; the galaxy rebuilds after the 5-minute
 hitime grace expires.
 
-**468 unit tests, tsc clean.**
+**502 unit tests, tsc clean.**
 
 The port is sufficient for live play over telnet. For the full original-vs-port story see
-`PORT.md`; for player-facing docs see `MANUAL.md`.
+`PORT.md`; for player-facing docs see `GUIDE.md` (player's guide) and `MANUAL.md`
+(per-command reference).
 
 ## Quick start
 
@@ -73,8 +75,11 @@ The test suite covers RNG draw order, every command path, the lobby state machin
 
 | File | Audience |
 |------|----------|
-| `MANUAL.md` | Player's manual — connecting, lobby, all 33 commands, combat, strategy, lifecycle |
+| `GUIDE.md` | Player's guide — narrative walkthrough, strategy, common mistakes, expert techniques |
+| `MANUAL.md` | Captain's manual — per-command reference for all 33 in-game commands |
 | `PORT.md` | Original-vs-port comparison — what was preserved, what changed, what was simplified, what was fixed |
+| `LICENSE` | GNU General Public License v3 (the project's license) |
+| `NOTICE` | Original-author attribution and derivative-work copyright |
 | `data/decwar.hlp` | In-game HELP content (served by `HELP <topic>`) |
 | `data/decwar.nws` | In-game NEWS content (operator-editable, re-read on each `NEWS` command) |
 
@@ -95,7 +100,7 @@ src/
   telnet/       # TCP server + telnet IO
   main.ts       # entry point
 test/
-  unit/         # 468 unit tests
+  unit/         # 502 unit tests
   harness/      # ScriptedIo (socket-free test seam)
 ```
 
@@ -120,28 +125,23 @@ These rules govern any change to the engine. Violating them risks divergence fro
 
 ## License
 
-The TypeScript port is original work, **MIT-licensed** — copyright Eric Freeman,
-University of Texas at Austin, Department of Arts and Entertainment Technology
-(see `LICENSE`).
-
-The original 1978–79 DECWAR FORTRAN/MACRO-10 source is included as a historical
-reference and carries its own authors' attribution; its specific distribution
-terms are not formally verified — see the second half of `LICENSE` for the notice.
-
-A near-term plan is to split this repo into:
-
-- **`decwar-ts` (core game)** — the engine itself, source-derived; same license posture as
-  the game portion.
-- **`decwar-harness` (production runner)** — the telnet server, persistence, supervisor
-  bits; MIT-clean separately.
-
-See `PORT.md` for the architecture mapping that makes that split straightforward.
+This project is released under the **GNU General Public License v3 or later** —
+both the original DECWAR (under its 2011 GPL re-release) and this TypeScript
+derivative.  See `LICENSE` for the full GPL-3 text and `NOTICE` for the full
+attribution.  The License-and-attribution callout at the top of this README
+is the short version.
 
 ## Heritage
 
-The original DECWAR was written 1978–79 by Don Gennery and others at the University of
-Texas, on the DEC PDP-10 running TOPS-10. The reconstruction tree used as the source of
-truth here is `utexas23-reconstruction` — a `kwrun ".."` re-creation of the 18-player
-version, including the original FORTRAN IV/MACRO-10 sources. Earlier CompuServe-era
-ports (10-ship, billing-gated) are tracked as separate evolution branches and
-deliberately excluded from this port.
+The original DECWAR was written in 1978–79 at the University of Texas on the
+DEC PDP-10 running TOPS-10, in FORTRAN IV and MACRO-10.  It was preserved and
+re-released in 2011 under the GNU General Public License v3 by Bob Hysick,
+Jeff Potter, and Harris Newman, in cooperation with what was then the
+University of Texas Computation Center.  That 2011 GPL release is the legal
+source of truth for the code we ported.
+
+The reconstruction tree used here is `utexas23-reconstruction` — a `kwrun ".."`
+re-creation of the 18-player UT version, including the original FORTRAN IV /
+MACRO-10 sources.  Earlier CompuServe-era ports (10-ship, billing-gated) are
+tracked as separate evolution branches and deliberately excluded from this
+port.

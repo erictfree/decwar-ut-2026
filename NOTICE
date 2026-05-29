@@ -5,7 +5,8 @@ Original DECWAR (FORTRAN IV / MACRO-10, 1978–79)
   The University of Texas Computation Center, and Harris Newman.
 
 This TypeScript / Node.js / telnet derivative port
-  Copyright (C) 2026 The University of Texas at Austin,
+  Copyright (C) 2026 Eric Freeman and
+  The University of Texas at Austin,
   Department of Arts and Entertainment Technologies.
 
 Both the original and this derivative work are released under the

@@ -9,8 +9,9 @@ More information on DECWAR and related initiatives: <strong>Noah Smith</strong> 
 
 > **License and attribution.** Original DECWAR (FORTRAN/MACRO-10, 1979) © 1979,
 > 2011 Bob Hysick, Jeff Potter, The University of Texas Computation Center, and
-> Harris Newman, under GPL v3+.  This TypeScript port © 2026 The University of
-> Texas at Austin, Department of Arts and Entertainment Technologies, also under
+> Harris Newman, under GPL v3+.  This TypeScript port © 2026 Eric Freeman and
+> The University of Texas at Austin, Department of Arts and Entertainment
+> Technologies, also under
 > GPL v3+.  See `LICENSE` / `NOTICE` for full terms.
 
 ---
