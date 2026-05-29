@@ -134,7 +134,8 @@ export class TelnetSocketIO implements TelnetIO {
     for (const byte of buf) {
       switch (this.#state) {
         case "data":
-          this.#onDataByte(byte);
+          if (byte === IAC) this.#state = "iac";
+          else this.#onDataByte(byte);
           break;
         case "iac":
           this.#onIacByte(byte);
