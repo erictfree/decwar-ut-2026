@@ -189,6 +189,13 @@ The reconstruction tree carries vestigial CompuServe code (account checks, docum
 purchase, terminal-type tables). These are flagged-and-excluded by the governing
 spec; the port doesn't implement them. See `CLAUDE.md` for the source-precedence rule.
 
+A full CompuServe-leakage audit was performed comparing the
+`utexas23-reconstruction/` (UT 18-player) tree against the root CompuServe v2.3 tree
+and the TypeScript port. Five CompuServe-only features were identified —
+`LOFCHK` session time-gating, the `DECWAF.STA` "free user" dual honor-roll file,
+the `CISHNG.MAC` hang-up intercept, the `drforbin/merlyn/tofix` developer markers,
+and `KNPLAY=10` — and **none** appear in the port. Result: clean.
+
 ### TOPS-10 system features
 
 Things that simply don't exist on Node:
@@ -198,6 +205,18 @@ Things that simply don't exist on Node:
 - `setran(daytim)` re-seeding per player (would break test determinism; preserved
   only at tournament-name reseed)
 - `kilhgh` (no shared high-segment to swap out of memory)
+
+The HELP corpus (`data/decwar.hlp`) also lost two topics that describe TOPS-10
+features the port cannot reproduce: `.DECINI` (the `DECWAR.INI` startup-script
+mechanism, which reads from "the UFD of the logged in PPN" — User File Directory
+and Project-Programmer-Number, both TOPS-10 file-system concepts) and `.CTL-T`
+(typing `^T` at the TOPS-10 monitor to inspect which of `DECWAR / DECWTI /
+DECWRN / DECWSL` the program is in — a TOPS-10-only process-status convention).
+Both topics described features that have no analog on Node, so leaving them in
+HELP would have misled players. The form-feed bytes used as PDP-10 printer
+page-breaks were also stripped from the file; their side effect was hiding
+the `.INPUT` and `.BASES` topics from the parser, so the strip restored them
+as visible topics.
 
 ### Honor-roll display
 

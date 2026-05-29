@@ -57,7 +57,7 @@ remaining ships on your side.  There are 9 ships on each side:
                 Trenton                       Manta
                 Vulcan                        Panther
                 Yorktown                      Wolf
-     Due to continuous espionage activities, present front-line  ships
+     Due to continuous espionage activities, present front-line  ships
 of the Federation and the Klingon Empire are identical in strength and
 weaponry.  These ships can move from sector  to  sector  using  either
 warp  or  impulse  engines,  can  attack enemy installations and ships
@@ -115,7 +115,7 @@ is inoperative.  A ship possesses the following devices:
          with  other  ships,  of either side.  Bases under attack also
          use the sub-space radio to call for  help  and  notify  their
          team's ships of their destruction.
-     9.  Tractor Beam -- The ship's tractor beam is used primarily  to
+     9.  Tractor Beam -- The ship's tractor beam is used primarily  to
          tow  damaged  friendly  ships away from danger.  The beam can
          not be used unless both ships have lowered their shields.
 
@@ -174,7 +174,7 @@ in several categories:
          as a refuge in times of stress).   A  damaged  starbase  will
          slowly  build  itself  back  to  full  strength  if it is not
          completely destroyed.
-     4.  Enemy planet.  These are just like enemy bases,  except  that
+     4.  Enemy planet.  These are just like enemy bases,  except  that
          they  are  weaker  (how  much  weaker  depends  on  how  many
          fortifications the enemy has built on them), and they can  be
          captured.   Their  firing range is only two sectors, and they
@@ -231,7 +231,7 @@ of each command).  The legal commands are:
 
     12.  NEWS -- Tell about any new features or enhancements described
          in the file GAM:DECWAR.NWS.
-    13.  PHASERS -- Fire phasers at a target.
+    13.  PHASERS -- Fire phasers at a target.
 
     14.  PLANETS -- List information on friendly and known  enemy  and
          neutral planets.
@@ -280,7 +280,7 @@ of each command).  The legal commands are:
 
 
 
-.INPUT
+.INPUT
 General INPUT information
 
 - Only the first 5 characters of each  input  word  are  stored.   Any
@@ -340,7 +340,7 @@ General INPUT information
 General OUTPUT information
 
 The SET OUTPUT LONG/MEDIUM/SHORT command controls the length  of  text
-output  throughout  the  game.   In  particular,  Medium  or Short hit
+output  throughout  the  game.   In  particular,  Medium  or Short hit
 messages received during battle are greatly  reduced  in  length  when
 compared  to  the Long format.  Unfortunately, these shorter forms are
 not as self-explanatory as the Long  form.   The  following  are  some
@@ -377,37 +377,6 @@ equivalent Long, Medium and Short hit messages:
 .
 
 
-.DECINI
-Use of the DECWAR.INI file
-
-After initialization (picking which side and ship), DECWAR  looks  for
-the file DECWAR.INI in the UFD of the logged in PPN.  If it finds one,
-it displays the message
-
-                [Reading commands from DECWAR.INI]
-
-and reads the lines from the file just as if  they  were  being  typed
-from  the  TTY  (it  echoes the commands as they are read).  After all
-commands have been read and executed, DECWAR switches to TTY input and
-displays the message
-
-                [Reading commands from TTY]
-
-Typical commands to be executed from DECWAR.INI  include  the  various
-SET  commands,  and  information  getting commands such as TARGETS and
-SCAN.  A typical DECWAR.INI file might contain:
-
-        set prompt informative  ;change prompt to ">"
-        set ocdef both          ;want absolute and relative coords
-        set output medium       ;don't want info output for novices
-        targets                 ;just to see who's around
-        srscan 2 w              ;take a quick peek
-
-Note that the comment character ;  (semicolon) and  the  echo  control
-character  ^G  (CTL-G)  can  also be used in DECWAR.INI.  If you don't
-want the comment to be echoed at run time, simply precede it  with  ^G
-to turn echoing off while the comment is scanned.
-.
 
 
 .PREGAME
@@ -460,7 +429,7 @@ Some general HINTS
   convenience when building planets, etc., but in battle, and combined
   with multiple commands per line and/or computed coordinates (such as
   PH C B/M R 1 0  or  TO 1 32 45), it can make or break your career as
-  a starship captain.
+  a starship captain.
 - Don't get within range of an enemy  base,  unless  you  enjoy  being
   pounded into rubble.  You can kill a base just as well from 1 sector
   outside it's range (use the WARNING keyword on SCAN to see the range
@@ -520,7 +489,7 @@ used  again.   It takes 2 to 4 seconds plus the amount of torpedo tube
 damage / 100 to load a torpedo.  For instance, if there was a 300 baud
 terminal  in the game, your torpedoes had 200 units of damage, and you
 had just fired 3 torpedoes, it would take 3 * (4 +  2)  =  18  seconds
-before you could fire torpedoes again.
+before you could fire torpedoes again.
 .
 
 
@@ -544,20 +513,9 @@ monitor level except by using the QUIT command.
 .
 
 
-.CTL-T
-Use of ^T
 
-The program name changes during different stages.  During startup,  it
-will  be  DECWAR.   When  waiting  for input, it will be DECWTI.  When
-executing a command, it will be DECWRN.  When sleeping after a command
-that  takes  time (MOVE, CAPTURE, BUILD, etc.) it will be DECWSL.  You
-can tell what state the game is in by typing ^T  and  looking  at  the
-program  name  displayed.  This is useful when you're not sure if it's
-waiting for a command yet or still executing a series of commands  you
-typed  in  ahead of time.  If the player is not in the game itself but
-just in the Pre-game section, the program name is DECWPG.
-.
-.BASES
+
+.BASES
 List various BASE information
 
 Syntax:  BAses [<keywords>]
@@ -617,7 +575,7 @@ ships, and can be DOCKed at to refuel and  rearm,  just  like  a  base
 Enemy planets can also be captured.  When capturing an enemy planet, 1
 second  is  added to the normal pause time of 5 seconds for each BUILD
 present.  Also, 50 units of ship energy are lost for each build.
-Examples:
+Examples:
 
 CA 12 32        Capture planet at 12-32.
 CA A 12 32      Equivalent to "CA 12 32".
@@ -677,7 +635,7 @@ DO ST SH T      Dock, show ship's shield strength and number of
 
 .ENERGY
 Transfer ENERGY to a friendly ship
-Syntax:  Energy <ship name> <units of energy to transfer>
+Syntax:  Energy <ship name> <units of energy to transfer>
 
 The receiving ship must be located in an adjacent sector.  10% of  the
 energy  transferred will be lost due to broadcast dissipation.  If you
@@ -737,7 +695,7 @@ conventions are used in the detailed descriptions:
 Examples:
 
 H               Give general help info.
-H *             List all available commands.
+H *             List all available commands.
 H H             List this block of text.
 H SH            Give help for the SHIELDS command.
 H HI G          Give some general HINTS and a description of the GRIPE
@@ -797,7 +755,7 @@ SHips           Include only ships (Federation, Empire, or Romulan).
 BAses           Include only bases (Federation or Empire).
 PLanets         Include only planets (Federation, Empire, or Neutral).
 POrts           Include only bases and planets.  If no side is
-                specified (Federation, Empire, Neutral, or Captured),
+                specified (Federation, Empire, Neutral, or Captured),
                 include only friendly ports.
 
 FEderation      Include only Federation forces.
@@ -857,7 +815,7 @@ Examples:
 
 M 37 45         Move to sector 37-45.
 M A 37 45       Equivalent to "M 37 45".
-M R 4 -5        Move to sector 37-45, if your present location is
+M R 4 -5        Move to sector 37-45, if your present location is
                 33-50 (move up 4 sectors and left 5 sectors).
 M C W           "Ram" the Wolf.  No actual collision occurs, but your
                 ship ends up adjacent to the Wolf's current position.
@@ -917,7 +875,7 @@ PH 300 12 32    Phaser target at sector 12-32, using 300 units of
 List various PLANET information
 
 Syntax:  PLanets [<keywords>]
-List location and number of  builds  for  all  known  planets,  and  a
+List location and number of  builds  for  all  known  planets,  and  a
 summary of planets within a specified range or the entire galaxy.  The
 default range is 10 sectors, and the default side is every side.   See
 the  help  for  LIST  for  more  information  and  the complete set of
@@ -977,7 +935,7 @@ Quit the game before  normal  end  of  execution  and  return  to  the
 monitor.   Your  ship  is  released  for use by another player, you're
 chalked up as just one more casualty, and you can't CONTINUE the game.
 If  you  want  to  rejoin the game, you'll have to wait 2 minutes, and
-then either START or RUN the game.  If  you  want  to  exit  the  game
+then either START or RUN the game.  If  you  want  to  exit  the  game
 temporarily  (to  answer  SENDS,  etc.),  type  ^C (CTL-C), and you'll
 usually be able to CONTINUE.  NOTE:  If you're under  red  alert,  you
 won't  be  able  to  ^C  out of the game;  you'll have to use the QUIT
@@ -1037,7 +995,7 @@ CORNER  modify  this  to include only the part of this original square
 specified (relative to the  ship).   The  maximum  scan  range  is  10
 sectors,  and  larger  specified ranges are reduced to this value.  If
 individual vertical and horizontal ranges are specified, the  scanning
-field will be shaped accordingly.  The WARNING keyword if added to the
+field will be shaped accordingly.  The WARNING keyword if added to the
 end of a SCAN command string will flag the empty sectors within  range
 of  an enemy base or planet with !'s instead of .'s.  The SCAN symbols
 and their meanings are:
@@ -1097,7 +1055,7 @@ Prompt  Normal   Default.  Use "COMMAND:  " prompt.
 Ttytype CRT, ADM-3a, ADM-2, SOROC, BEEHIVE, ACT-IV, ACT-V, VT05, VT06,
                  VT50, VT52, VT100
                  Tells DECWAR the TTY type so that it can do rubout, R
-                 and U properly
+                 and U properly
 OCdef   Absolute Default.  Display all coordinates in absolute format
                  (vpos-hpos).
         Relative Display coordinates relative to your location
@@ -1156,7 +1114,7 @@ attributes:   ship  condition, location, number of torps, ship energy,
 ship damage, shield energy, and radio condition.  Ship  condition  can
 be green, yellow (low on energy), or red (in battle).  Radio condition
 is either on or off.
-Examples:
+Examples:
 
 ST              Give full status report.
 ST T            Report how many torpedos remain on board.
@@ -1215,7 +1173,7 @@ Send messages to one or several of the players currently in the  game,
 with  no  range limitation.  Players who have turned their radios off,
 or have a critically damaged sub-space radio can not be sent to.   The
 TELL command can not be repeated using the ESCAPE key (no junk mail!).
-Examples:
+Examples:
 
 TE V;Hello!     Send "Hello!" to the Vulcan.
 TE KL;DROP DEAD Send "DROP DEAD" to all Klingons.
@@ -1275,7 +1233,7 @@ TO C 1 E          Fire one torpedo at the Excalibur.
 TRACTOR beam
 
 Syntax:  TRactor <ship name>  or  TRactor Off
-Tow another ship of the same team.  The two ships must be  located  in
+Tow another ship of the same team.  The two ships must be  located  in
 adjacent sectors and both ships must have their shields lowered.  Once
 such a beam is applied, either ship can pull the other behind it using
 warp  or impulse engines.  Energy consumption for the towing ship is 3
