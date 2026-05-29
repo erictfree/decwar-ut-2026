@@ -163,17 +163,23 @@ function renderTopicList(topics: readonly string[]): string {
  * (multiple sections share it) falls back to the TOC.
  */
 function dispatchHelp(parsed: ParsedHelp, topic: string, fallback: string): string {
-  if (topic === "") return parsed.raw || fallback;
+  if (topic === "") return ensureTrailingCrlf(parsed.raw || fallback);
   if (topic === "*") return renderTopicList(parsed.topics);
   const key = topic.toUpperCase();
   const exact = parsed.sections.get(key);
-  if (exact !== undefined && exact !== "") return exact;
+  if (exact !== undefined && exact !== "") return ensureTrailingCrlf(exact);
   const candidates = parsed.topics.filter((t) => t.startsWith(key));
   if (candidates.length === 1) {
     const section = parsed.sections.get(candidates[0]!);
-    if (section !== undefined && section !== "") return section;
+    if (section !== undefined && section !== "") return ensureTrailingCrlf(section);
   }
   return `\r\n(No HELP entry for '${topic}'.)\r\n${renderTopicList(parsed.topics)}`;
+}
+
+/** The HELP file's section bodies often end at a lone `.` terminator with no trailing
+ *  newline, so the next prompt would jam onto the same line.  Always close with CRLF. */
+function ensureTrailingCrlf(text: string): string {
+  return text.endsWith("\r\n") ? text : `${text}\r\n`;
 }
 
 // ── InMemory store (tests / no-config) ───────────────────────────────────────────────────
