@@ -125,6 +125,35 @@ test("firing at your own location is refused", async () => {
   assert.match(io.output, /Own location used!/);
 });
 
+// ── Relative-coordinate parse (regression: `TOR n R dv dh`) ───────────────────────────────
+
+test("RELATIVE keyword anywhere in the burst arguments adds the ship's position", async () => {
+  // Ship sits at (10, 10) per setup(); `R -4 0` should target absolute (6, 10).
+  // Bug under repair: the parser dropped the `R` keyword and treated `-4 0`
+  // as absolute, blowing the range check.
+  const { state, session, io } = setup();
+  addEnemy(state, 6, 10);
+  session.tokens = tokenize("TORP 1 R -4 0", 0).tokens;
+  assert.equal(await torpedos(state, session), true);
+  assert.doesNotMatch(io.output, /out of range/i);
+});
+
+test("RELATIVE keyword AFTER the count is accepted leniently (`TOR 2 R -4 0`)", async () => {
+  const { state, session, io } = setup();
+  addEnemy(state, 6, 10);
+  session.tokens = tokenize("TORP 2 R -4 0", 0).tokens;
+  assert.equal(await torpedos(state, session), true);
+  assert.doesNotMatch(io.output, /out of range/i);
+});
+
+test("ABSOLUTE keyword still resolves to literal coordinates", async () => {
+  const { state, session, io } = setup();
+  addEnemy(state, 12, 10);
+  session.tokens = tokenize("TORP A 1 12 10", 0).tokens;
+  assert.equal(await torpedos(state, session), true);
+  assert.doesNotMatch(io.output, /out of range/i);
+});
+
 // ── Cooldown stamp (source DECWAR.FOR:4315 `tpaus` accumulator) ───────────────────────────
 
 test("tobank cooldown accumulates per-torp, including KDTORP damage term", async () => {

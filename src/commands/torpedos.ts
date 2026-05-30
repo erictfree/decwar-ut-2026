@@ -43,7 +43,8 @@ import {
   ERROR1,
   ERROR2,
 } from "../render/strings.ts";
-import { KCRIT, KRANGE, KCMDTM, DEV, DX, COND, OFLG, PT } from "../core/constants.ts";
+import { KCRIT, KRANGE, KCMDTM, DEV, DX, COND, OFLG, PT, COORD, TOK } from "../core/constants.ts";
+import { equal } from "../parser/match.ts";
 import { ldis } from "../core/geometry.ts";
 import { plnrmv } from "../lifecycle/place.ts";
 import { snova } from "../combat/nova.ts";
@@ -61,7 +62,16 @@ async function readArgLine(session: Session): Promise<string | null> {
   return session.hungup ? null : line;
 }
 
-/** Parse `n v h [v h [v h]]`. Returns null on abort; reports torp-specific errors. */
+/**
+ * Parse `[ABS|REL] n v h [v h [v h]]` (or, leniently, the keyword anywhere among the
+ * numeric tokens — players commonly type `TOR 2 R -4 0` as well as the canonical
+ * `TOR R 2 -4 0`).  Returns null on abort; reports torp-specific errors.
+ *
+ * Source DECWAR.HLP `.TORPEDOES`:
+ *   `TOrpedo [Absolute|Relative|Computed] n <v1><h1> [<v2><h2> [<v3><h3>]]`
+ * The keyword defaults to `session.icflg` (the player's SET COORD preference).
+ * COMPUTED (ship-name targeting) is not yet implemented.
+ */
 async function parseBurst(state: GameState, session: Session): Promise<Burst | null> {
   let toks: TokenBuffers = session.tokens;
   let p = 2;
@@ -74,8 +84,18 @@ async function parseBurst(state: GameState, session: Session): Promise<Burst | n
     if (toks.ntok === 0) return null;
   }
 
+  // Scan all tokens after p for an ABS/REL keyword (canonical position is before
+  // count; players also type it after count).  Default to the player's icflg.
+  let relative = session.icflg !== COORD.ABS;
+  for (let i = p; i <= toks.ntok; i++) {
+    if (toks.type[i] !== TOK.KALF) continue;
+    const k = toks.text[i] ?? "";
+    if (equal(k, "ABSOLUTE")) relative = false;
+    else if (equal(k, "RELATIVE")) relative = true;
+  }
+
   const ints: number[] = [];
-  for (let i = p; i <= toks.ntok; i++) if (toks.type[i] === 1 /* KINT */) ints.push(toks.val[i] ?? 0);
+  for (let i = p; i <= toks.ntok; i++) if (toks.type[i] === TOK.KINT) ints.push(toks.val[i] ?? 0);
   if (ints.length < 3) return null; // need at least n + one (v,h)
 
   const ntorp = ints[0]!;
@@ -85,8 +105,11 @@ async function parseBurst(state: GameState, session: Session): Promise<Burst | n
     return null;
   }
 
+  const ship = state.ships[session.who]!;
+  const dV = relative ? ship.vPos : 0;
+  const dH = relative ? ship.hPos : 0;
   const pairs: Array<{ v: number; h: number }> = [];
-  for (let i = 1; i + 1 < ints.length; i += 2) pairs.push({ v: ints[i]!, h: ints[i + 1]! });
+  for (let i = 1; i + 1 < ints.length; i += 2) pairs.push({ v: ints[i]! + dV, h: ints[i + 1]! + dH });
   if (pairs.length === 0) return null;
   const last = pairs[pairs.length - 1]!;
   const targets = Array.from({ length: ntorp }, (_, k) => pairs[k] ?? last);
